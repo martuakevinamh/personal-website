@@ -3,16 +3,25 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { personalInfo } from "@/data/personal";
+// import { personalInfo } from "@/data/personal"; // Remove static import
 
-// Daftar gambar untuk slideshow - tambahkan path gambar Anda di sini
+type PersonalInfo = {
+  name: string;
+  role: string; 
+  bio: string;
+  location: string;
+  email: string;
+  resume_url?: string; 
+};
+
+// Daftar gambar untuk slideshow (Static for now)
 const profileImages = [
-  "/images/profile.jpeg",
-  "/images/profile-2.jpeg",
-  "/images/profile-3.jpeg",
+  "/images/profile/profile.jpeg",
+  "/images/profile/profile2.jpeg",
+  "/images/profile/profile3.jpeg",
 ];
 
-export default function About() {
+export default function About({ personalInfo }: { personalInfo: any }) { 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Auto-rotate images every 3 seconds
@@ -23,6 +32,8 @@ export default function About() {
 
     return () => clearInterval(interval);
   }, []);
+  
+  if (!personalInfo) return null;
 
   return (
     <section id="about" className="py-24 relative">
@@ -82,7 +93,8 @@ export default function About() {
             </h3>
 
             <div className="space-y-4 text-zinc-400 leading-relaxed">
-              {personalInfo.bio.split("\n\n").map((paragraph, index) => (
+              {/* Handle potential null bio */}
+              {(personalInfo.bio || "").split("\n\n").map((paragraph: string, index: number) => (
                 <p key={index}>{paragraph}</p>
               ))}
             </div>
@@ -92,7 +104,7 @@ export default function About() {
               <div className="glass-card p-4">
                 <div className="text-violet-500 mb-2">📍</div>
                 <div className="text-sm text-zinc-400">Location</div>
-                <div className="font-medium">{personalInfo.location}</div>
+                <div className="font-medium">{personalInfo.location || "Indonesia"}</div>
               </div>
               <div className="glass-card p-4">
                 <div className="text-violet-500 mb-2">✉️</div>
@@ -104,10 +116,10 @@ export default function About() {
             </div>
 
             {/* Download CV Button */}
-            {personalInfo.resumeUrl && personalInfo.resumeUrl !== "#" && (
+            {personalInfo.resume_url && personalInfo.resume_url !== "#" && (
               <div className="mt-8">
                 <Link
-                  href={personalInfo.resumeUrl}
+                  href={personalInfo.resume_url}
                   className="btn-primary inline-flex items-center gap-2"
                   target="_blank"
                 >

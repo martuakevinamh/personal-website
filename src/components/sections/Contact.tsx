@@ -41,7 +41,10 @@ export default function Contact() {
   const [error, setError] = useState("");
 
   // Formspree endpoint
-  const FORMSPREE_ENDPOINT = "https://formspree.io/f/mlgggvap";
+  // Formspree endpoint
+  const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ID 
+    ? `https://formspree.io/f/${process.env.NEXT_PUBLIC_FORMSPREE_ID}`
+    : "https://formspree.io/f/mlgggvap"; // Fallback
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

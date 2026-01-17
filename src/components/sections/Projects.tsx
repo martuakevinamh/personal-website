@@ -2,13 +2,27 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { projectsData } from "@/data/projects";
+// import { projectsData } from "@/data/projects"; // Removed
 
-export default function Projects() {
+type Project = {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  tags: string[];
+  demoUrl?: string;
+  githubUrl?: string;
+  featured: boolean;
+  status: "ongoing" | "completed" | string;
+};
+
+export default function Projects({ projects }: { projects: Project[] }) {
   const [activeTab, setActiveTab] = useState<"ongoing" | "completed">("ongoing");
 
-  const ongoingProjects = projectsData.filter((p) => p.status === "ongoing");
-  const completedProjects = projectsData.filter((p) => p.status === "completed");
+  if (!projects) return null;
+
+  const ongoingProjects = projects.filter((p) => p.status === "ongoing");
+  const completedProjects = projects.filter((p) => p.status === "completed");
 
   const displayedProjects = activeTab === "ongoing" ? ongoingProjects : completedProjects;
 
@@ -95,8 +109,6 @@ export default function Projects() {
                 )}
               </div>
 
-
-
               {/* Project Content */}
               <div className="p-6">
                 <h3 className="text-xl font-bold mb-2">{project.title}</h3>
@@ -106,7 +118,7 @@ export default function Projects() {
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {project.tags.slice(0, 3).map((tag) => (
+                  {(project.tags || []).slice(0, 3).map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400"

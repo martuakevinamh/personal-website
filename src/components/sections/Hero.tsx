@@ -2,10 +2,26 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { personalInfo } from "@/data/personal";
-import { socialLinks } from "@/data/social";
+// import { personalInfo } from "@/data/personal"; // Removed static import
+// import { socialLinks } from "@/data/social";
 import React from "react";
 
+// Define Prop Type matching DB structure (loosely)
+type PersonalInfo = {
+  name: string;
+  role: string; // mapped from DB 'role'
+  bio: string;
+  github_url?: string;
+  linkedin_url?: string;
+  instagram_url?: string;
+  email?: string;
+};
+
+// We can still use valid socialLinks from data for icons, but override URLs if present in DB
+// Or just use the DB ones directly if we want to dynamicize the icons too (but icons are static in UI helper).
+// Let's merge them.
+
+// Helper for social icons
 const SocialIcon = ({ icon }: { icon: string }) => {
   const icons: Record<string, React.ReactNode> = {
     github: (
@@ -32,7 +48,17 @@ const SocialIcon = ({ icon }: { icon: string }) => {
   return icons[icon] || null;
 };
 
-export default function Hero() {
+export default function Hero({ personalInfo }: { personalInfo: PersonalInfo | null }) {
+  if (!personalInfo) return null; // or loading state
+
+  // Dynamic social links from DB
+  const dynamicSocials = [
+    { name: "github", url: personalInfo.github_url, icon: "github" },
+    { name: "linkedin", url: personalInfo.linkedin_url, icon: "linkedin" },
+    { name: "instagram", url: personalInfo.instagram_url, icon: "instagram" },
+    { name: "email", url: `mailto:${personalInfo.email}`, icon: "email" },
+  ].filter(s => s.url); // filter out empty
+
   return (
     <section
       id="home"
@@ -69,10 +95,11 @@ export default function Hero() {
               <span className="gradient-text">{personalInfo.name}</span>
             </h1>
             <h2 className="text-xl md:text-2xl text-zinc-300 mb-6 fade-in stagger-2">
-              {personalInfo.title}
+              {personalInfo.role}
             </h2>
             <p className="text-zinc-400 max-w-lg mb-8 fade-in stagger-3">
-              {personalInfo.tagline}
+              {/* Fallback for tagline since it's missing in DB currently */}
+              Building innovative and impactful digital solutions
             </p>
 
             {/* CTA Buttons */}
@@ -87,7 +114,7 @@ export default function Hero() {
 
             {/* Social Links */}
             <div className="flex gap-4 justify-center md:justify-start fade-in stagger-5">
-              {socialLinks.map((link) => (
+              {dynamicSocials.map((link) => (
                 <a
                   key={link.name}
                   href={link.url}
@@ -106,7 +133,7 @@ export default function Hero() {
           <div className="shrink-0 fade-in">
             <div className="profile-glow w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden">
               <Image
-                src="/images/profile.jpeg"
+                src="/images/profile/profile.jpeg"
                 alt={personalInfo.name}
                 width={320}
                 height={320}

@@ -21,10 +21,7 @@ export const experienceData: Experience[] = [
     startDate: "2024",
     endDate: "2025",
     description: "Memimpin Departemen Creative Media & IT dalam mengelola seluruh platform digital organisasi. Bertanggung jawab dalam pengembangan, mengelola konten sosial media (Instagram, Tiktok), serta merancang strategi digital untuk meningkatkan engagement dan jangkauan publikasi kegiatan organisasi.",
-    images: [
-      "/images/experience/org-1-1.jpg",
-      "/images/experience/org-1-2.jpg",
-    ],
+    images: [],
   },
   {
     id: 2,
@@ -34,9 +31,7 @@ export const experienceData: Experience[] = [
     startDate: "2022",
     endDate: "Sekarang",
     description: "Mengkoordinasikan seluruh kebutuhan logistik dan inventaris untuk kegiatan PMK ITERA. Bertanggung jawab dalam pengadaan, pendataan, dan pemeliharaan aset organisasi. Mengelola sistem peminjaman peralatan serta memastikan kelancaran operasional setiap acara yang diselenggarakan.",
-    images: [
-      "/images/experience/org-2-1.jpg",
-    ],
+    images: [],
   },
   {
     id: 3,
@@ -46,9 +41,7 @@ export const experienceData: Experience[] = [
     startDate: "2024",
     endDate: "2025",
     description: "Berperan aktif dalam menjembatani komunikasi antara mahasiswa Informatika dengan pihak jurusan dan institusi. Mengumpulkan, menganalisis, dan menyalurkan aspirasi mahasiswa terkait akademik, fasilitas, dan kegiatan kemahasiswaan. Turut serta dalam penyusunan program kerja yang berorientasi pada kebutuhan mahasiswa.",
-    images: [
-      "/images/experience/org-3-1.jpg",
-    ],
+    images: [],
   },
   // Kepanitiaan
   {
@@ -60,8 +53,7 @@ export const experienceData: Experience[] = [
     endDate: "2025",
     description: "Memimpin dan mengkoordinasikan seluruh rangkaian kegiatan PICC (PMK ITERA Christian Camp). Bertanggung jawab dalam perencanaan, penganggaran, dan eksekusi acara. Mengelola tim panitia lintas divisi untuk memastikan keberhasilan pelaksanaan retreat tahunan yang diikuti oleh seluruh anggota PMK ITERA.",
     images: [
-      "/images/experience/com-1-1.jpg",
-      "/images/experience/com-1-2.jpg",
+      "/images/experience/picc1.jpeg",
     ],
   },
   {
@@ -73,7 +65,12 @@ export const experienceData: Experience[] = [
     endDate: "2025",
     description: "Mendampingi dosen dalam pelaksanaan perkuliahan Pendidikan Agama Kristen Protestan. Membantu dalam penyusunan materi pembelajaran, memeriksa tugas mahasiswa, dan memfasilitasi diskusi kelas. Berperan sebagai penghubung antara mahasiswa dan dosen untuk memastikan proses belajar mengajar yang efektif.",
     images: [
-      "/images/experience/com-2-1.jpg",
+      "/images/experience/asdos1.jpeg",
+      "/images/experience/asdos2.jpeg",
+      "/images/experience/asdos3.jpeg",
+      "/images/experience/asdos4.jpeg",
+      "/images/experience/asdos5.jpeg",
+      "/images/experience/asdos6.jpeg",
     ],
   },
 ];

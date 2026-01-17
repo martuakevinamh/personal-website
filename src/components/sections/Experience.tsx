@@ -2,10 +2,27 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { experienceData, type Experience } from "@/data/experience";
+// import { experienceData, type Experience } from "@/data/experience";
+
+type ExperienceImage = {
+  src: string;
+  position?: string;
+  zoom?: number;
+};
+
+type Experience = {
+  id: number;
+  title: string;
+  organization: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  images: ExperienceImage[];
+};
 
 // Image Slideshow Component
-function ImageSlideshow({ images, alt }: { images: string[]; alt: string }) {
+function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -20,23 +37,28 @@ function ImageSlideshow({ images, alt }: { images: string[]; alt: string }) {
 
   if (images.length === 0) {
     return (
-      <div className="w-full h-32 bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500">
+      <div className="w-full h-48 bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500">
         No Image
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-32 rounded-lg overflow-hidden mb-3">
-      {images.map((src, index) => (
+    <div className="relative w-full h-48 rounded-lg overflow-hidden mb-3 group">
+      {images.map((img, index) => (
         <Image
-          key={src}
-          src={src}
+          key={img.src}
+          src={img.src}
           alt={`${alt} - ${index + 1}`}
           fill
           className={`object-cover transition-opacity duration-500 ${
             index === currentIndex ? "opacity-100" : "opacity-0"
           }`}
+          style={{ 
+            objectPosition: img.position || "center center",
+            transform: `scale(${img.zoom || 1})`,
+            transformOrigin: img.position || "center center"
+          }}
         />
       ))}
       {/* Overlay gradient */}
@@ -90,9 +112,12 @@ function ExperienceCard({ exp, index, color }: { exp: Experience; index: number;
   );
 }
 
-export default function Experience() {
-  const organizations = experienceData.filter((exp) => exp.type === "organization");
-  const committees = experienceData.filter((exp) => exp.type === "committee");
+export default function Experience({ experiences }: { experiences: Experience[] }) {
+  // Guard clause for missing data
+  if (!experiences) return null;
+
+  const organizations = experiences.filter((exp) => exp.type === "organization");
+  const committees = experiences.filter((exp) => exp.type === "committee");
 
   return (
     <section id="experience" className="py-24 relative">
@@ -113,14 +138,18 @@ export default function Experience() {
               Organisasi
             </h3>
             <div className="space-y-6">
-              {organizations.map((exp, index) => (
-                <ExperienceCard
-                  key={exp.id}
-                  exp={exp}
-                  index={index}
-                  color="text-violet-400"
-                />
-              ))}
+              {organizations.length > 0 ? (
+                organizations.map((exp, index) => (
+                  <ExperienceCard
+                    key={exp.id}
+                    exp={exp}
+                    index={index}
+                    color="text-violet-400"
+                  />
+                ))
+              ) : (
+                <p className="text-zinc-500 italic">No organization experience listed.</p>
+              )}
             </div>
           </div>
 
@@ -131,14 +160,18 @@ export default function Experience() {
               Kepanitiaan
             </h3>
             <div className="space-y-6">
-              {committees.map((exp, index) => (
-                <ExperienceCard
-                  key={exp.id}
-                  exp={exp}
-                  index={index}
-                  color="text-fuchsia-400"
-                />
-              ))}
+              {committees.length > 0 ? (
+                committees.map((exp, index) => (
+                  <ExperienceCard
+                    key={exp.id}
+                    exp={exp}
+                    index={index}
+                    color="text-fuchsia-400"
+                  />
+                ))
+              ) : (
+                 <p className="text-zinc-500 italic">No committee experience listed.</p>
+              )}
             </div>
           </div>
         </div>

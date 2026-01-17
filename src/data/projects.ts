@@ -42,10 +42,10 @@ export const projectsData: Project[] = [
   },
   {
     id: 4,
-    title: "Game Pustaka Swardwipa",
+    title: "Game Pustaka Swarnadwipa",
     description:
-      "Game Pustaka Swardwipa yang berfungsi sebagai platform informasi Pustaka Swardwipa.",
-    image: "/images/projects/project-4.jpg",
+      "Game edukasi interaktif untuk memperkenalkan koleksi dan layanan Pustaka Swarnadwipa kepada pengguna.",
+    image: "/images/projects/pustaka-swarndwipa1.jpeg",
     tags: ["Godot Engine", "GDScript"],
     githubUrl: "https://github.com/FadilRifqi/pustaka-swarnadwipa.git",
     featured: false,
