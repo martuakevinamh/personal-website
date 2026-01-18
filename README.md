@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Personal Website
 
 Website portfolio personal yang modern dan dinamis, dibangun dengan **Next.js 15**, **Tailwind CSS v4**, dan **Supabase** sebagai backend.
@@ -100,7 +99,4 @@ src/
 
 ## 📄 License
 
-MIT License
-=======
-
->>>>>>> 8e64cf307a97f2836bbafb1c920e300388328f9a
+# MIT License

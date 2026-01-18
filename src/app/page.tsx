@@ -15,7 +15,7 @@ type ExperienceImageRaw = {
   zoom: number | null;
 };
 
-export const revalidate = 10; // Revalidate every 10s
+export const dynamic = 'force-dynamic'; // Always fetch fresh data
 
 type SkillCategory = {
   id: string;
@@ -73,13 +73,27 @@ export default async function Home() {
     .from("projects")
     .select("*")
     .order("created_at", { ascending: false });
-  
-  const projectsTransformed = projects?.map(p => ({
-    ...p,
-    image: p.image_src, // map db column to prop
-    demoUrl: p.demo_url,
-    githubUrl: p.github_url
-  })) || [];
+
+  // Fetch project images
+  const { data: projectImages } = await supabase
+    .from("project_images")
+    .select("*")
+    .order("sort_order");
+
+  const projectsTransformed = projects?.map(p => {
+    // Find images for this project
+    const images = projectImages?.filter(img => img.project_id === p.id)
+      .map(img => ({
+        src: img.src,
+        position: img.position || "center center"
+      })) || [];
+    return {
+      ...p,
+      images, // Pass all images for slideshow
+      demoUrl: p.demo_url,
+      githubUrl: p.github_url
+    };
+  }) || [];
 
   return (
     <>

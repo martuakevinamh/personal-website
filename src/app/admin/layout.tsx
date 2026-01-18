@@ -64,6 +64,13 @@ export default function AdminLayout({
           ))}
         </nav>
 
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all"
+        >
+          ← Back to Website
+        </Link>
+
         <button
           onClick={async () => {
             await supabase.auth.signOut();

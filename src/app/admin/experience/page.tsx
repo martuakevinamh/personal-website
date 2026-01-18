@@ -44,9 +44,28 @@ export default function ExperiencePage() {
     images: [],
   });
 
+  const DRAFT_KEY = "admin_experience_draft";
+
+  // Load draft from localStorage on mount
   useEffect(() => {
     fetchExperiences();
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setFormData(parsed);
+        setShowForm(true);
+        toast.success("Draft restored", { icon: "📝" });
+      } catch { /* ignore invalid JSON */ }
+    }
   }, []);
+
+  // Auto-save draft to localStorage when formData changes
+  useEffect(() => {
+    if (showForm || editingId) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    }
+  }, [formData, showForm, editingId]);
 
   const fetchExperiences = async () => {
     setLoading(true);
@@ -99,7 +118,7 @@ export default function ExperiencePage() {
 
   const handleCancel = () => {
     setEditingId(null);
-    setShowForm(false); // Hide form on cancel
+    setShowForm(false);
     setFormData({
       id: 0,
       title: "",
@@ -110,6 +129,7 @@ export default function ExperiencePage() {
       description: "",
       images: [],
     });
+    localStorage.removeItem(DRAFT_KEY); // Clear draft
   };
 
   const handleAddImage = () => {
@@ -300,7 +320,7 @@ export default function ExperiencePage() {
                 <label className="block text-sm text-zinc-400 mb-1">End Date</label>
                 <input
                   type="date"
-                  value={formData.end_date}
+                  value={formData.end_date || ""}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
                 />

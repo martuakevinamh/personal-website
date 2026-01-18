@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "placehold.co",
       },
+      {
+        protocol: "https",
+        hostname: "wyvegindcbfyrycyigfy.supabase.co",
+      },
     ],
     // Disable image optimization for unoptimized images
     unoptimized: false,

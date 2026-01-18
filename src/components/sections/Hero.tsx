@@ -56,7 +56,6 @@ export default function Hero({ personalInfo }: { personalInfo: PersonalInfo | nu
     { name: "github", url: personalInfo.github_url, icon: "github" },
     { name: "linkedin", url: personalInfo.linkedin_url, icon: "linkedin" },
     { name: "instagram", url: personalInfo.instagram_url, icon: "instagram" },
-    { name: "email", url: `mailto:${personalInfo.email}`, icon: "email" },
   ].filter(s => s.url); // filter out empty
 
   return (
