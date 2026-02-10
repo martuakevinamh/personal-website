@@ -21,7 +21,7 @@ const profileImages = [
   "/images/profile/profile3.jpeg",
 ];
 
-export default function About({ personalInfo }: { personalInfo: any }) { 
+export default function About({ personalInfo }: { personalInfo: PersonalInfo | null }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Auto-rotate images every 3 seconds

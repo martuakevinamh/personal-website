@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 type ConfirmModalProps = {
   isOpen: boolean;
   title: string;
@@ -19,23 +17,14 @@ export default function ConfirmModal({
   onClose,
   isLoading = false,
 }: ConfirmModalProps) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setVisible(true);
-    } else {
-      setTimeout(() => setVisible(false), 300); // Wait for animation
-    }
-  }, [isOpen]);
-
-  if (!visible && !isOpen) return null;
-
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+        isOpen ? "pointer-events-auto" : "pointer-events-none"
+      } ${
         isOpen ? "opacity-100" : "opacity-0"
       }`}
+      aria-hidden={!isOpen}
     >
       {/* Backdrop */}
       <div 
