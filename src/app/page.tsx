@@ -10,6 +10,7 @@ import Contact from "@/components/sections/Contact";
 import { supabase } from "@/lib/supabase";
 import { experienceData } from "@/data/experience";
 import { projectsData } from "@/data/projects";
+import { personalInfo as staticPersonalInfo } from "@/data/personal";
 
 type ExperienceImageRaw = {
   src: string;
@@ -28,6 +29,21 @@ type SkillCategory = {
 export default async function Home() {
   // 1. Fetch Personal Info
   const { data: personal } = await supabase.from("personal").select("*").single();
+
+  // Keep local static personal info as fallback so Hero/About never disappear
+  const personalTransformed = personal
+    ? personal
+    : {
+        name: staticPersonalInfo.name,
+        role: staticPersonalInfo.title,
+        bio: staticPersonalInfo.bio,
+        location: staticPersonalInfo.location,
+        email: staticPersonalInfo.email,
+        github_url: "",
+        linkedin_url: "",
+        instagram_url: "",
+        resume_url: staticPersonalInfo.resumeUrl,
+      };
 
   // 2. Fetch Skills (Group by category)
   const { data: skillsRaw } = await supabase.from("skills").select("*").order("sort_order");
@@ -155,8 +171,8 @@ export default async function Home() {
     <>
       <Navbar />
       <main>
-        <Hero personalInfo={personal} />
-        <About personalInfo={personal} />
+        <Hero personalInfo={personalTransformed} />
+        <About personalInfo={personalTransformed} />
         {/* Education is static for now or can be added later */}
         <Education />
         <Experience experiences={experiencesTransformed} />
