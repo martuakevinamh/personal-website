@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { experienceData } from "@/data/experience";
 import { projectsData } from "@/data/projects";
 import { personalInfo as staticPersonalInfo } from "@/data/personal";
+import { skillsData } from "@/data/skills";
 
 
 type ExperienceImageRaw = {
@@ -164,9 +165,7 @@ export default async function Home() {
     id: project.id,
     title: project.title,
     description: project.description,
-    images: project.image
-      ? [{ src: project.image, position: "center center" }]
-      : [],
+    images: project.images || [],
     tags: project.tags,
     demoUrl: project.demoUrl,
     githubUrl: project.githubUrl,
