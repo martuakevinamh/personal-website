@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import ProjectDetailModal from "./ProjectDetailModal";
 
 type ProjectImage = {
   src: string;
@@ -21,7 +22,7 @@ type Project = {
 };
 
 // Individual project card with auto-rotating images
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+function ProjectCard({ project, index, onSelect }: { project: Project; index: number; onSelect: (p: Project) => void }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = project.images || [];
 
@@ -38,8 +39,9 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
   return (
     <div
-      className="glass-card overflow-hidden group fade-in"
+      className="glass-card overflow-hidden group fade-in cursor-pointer"
       style={{ animationDelay: `${index * 0.1}s` }}
+      onClick={() => onSelect(project)}
     >
       {/* Project Image */}
       <div className="relative h-48 overflow-hidden bg-zinc-800">
@@ -72,7 +74,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrentImageIndex(i)}
+                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i); }}
                 className={`w-2 h-2 rounded-full transition-all ${
                   i === currentImageIndex ? "bg-white scale-125" : "bg-white/40"
                 }`}
@@ -127,6 +129,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
               href={project.demoUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,6 +143,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -156,6 +160,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
 export default function Projects({ projects }: { projects: Project[] }) {
   const [activeTab, setActiveTab] = useState<"ongoing" | "completed">("ongoing");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   if (!projects) return null;
 
@@ -207,7 +212,7 @@ export default function Projects({ projects }: { projects: Project[] }) {
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayedProjects.map((project, index) => (
-            <ProjectCard key={project.id} project={project} index={index} />
+            <ProjectCard key={project.id} project={project} index={index} onSelect={setSelectedProject} />
           ))}
         </div>
 
@@ -217,6 +222,14 @@ export default function Projects({ projects }: { projects: Project[] }) {
           </div>
         )}
       </div>
+
+      {/* Project Detail Modal */}
+      {selectedProject && (
+        <ProjectDetailModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
     </section>
   );
 }

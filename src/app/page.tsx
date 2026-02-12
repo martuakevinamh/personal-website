@@ -160,29 +160,20 @@ export default async function Home() {
     };
   }) || [];
 
-  // Keep local static entries as fallback so older data is never hidden
-  const staticProjects = projectsData.map((project) => ({
-    id: project.id,
-    title: project.title,
-    description: project.description,
-    images: project.images || [],
-    tags: project.tags,
-    demoUrl: project.demoUrl,
-    githubUrl: project.githubUrl,
-    featured: project.featured,
-    status: project.status,
-  }));
-
-  const projectMap = new Map<string, (typeof dbProjects)[number]>();
-  dbProjects.forEach((project) => {
-    projectMap.set(project.title, project);
-  });
-  staticProjects.forEach((project) => {
-    if (!projectMap.has(project.title)) {
-      projectMap.set(project.title, project);
-    }
-  });
-  const projectsTransformed = Array.from(projectMap.values());
+  // Use DB projects if available, otherwise fall back to static data
+  const projectsTransformed = dbProjects.length > 0
+    ? dbProjects
+    : projectsData.map((project) => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        images: project.images || [],
+        tags: project.tags,
+        demoUrl: project.demoUrl,
+        githubUrl: project.githubUrl,
+        featured: project.featured,
+        status: project.status,
+      }));
 
   return (
     <>
