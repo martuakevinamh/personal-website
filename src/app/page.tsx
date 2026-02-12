@@ -12,6 +12,7 @@ import { experienceData } from "@/data/experience";
 import { projectsData } from "@/data/projects";
 import { personalInfo as staticPersonalInfo } from "@/data/personal";
 
+
 type ExperienceImageRaw = {
   src: string;
   position: string | null;
@@ -48,22 +49,39 @@ export default async function Home() {
   // 2. Fetch Skills (Group by category)
   const { data: skillsRaw } = await supabase.from("skills").select("*").order("sort_order");
   
-  // Group logic
-  const skillsGrouped: SkillCategory[] = skillsRaw 
+  // Group DB skills by category
+  const dbSkillsGrouped: SkillCategory[] = skillsRaw
     ? Object.values(skillsRaw.reduce((acc: Record<string, SkillCategory>, skill) => {
         if (!acc[skill.category]) {
           acc[skill.category] = {
-            id: skill.category, // Use category name as ID 
+            id: skill.category,
             title: skill.category,
-            skills: []
+            skills: [],
           };
         }
         acc[skill.category].skills.push({ name: skill.name });
         return acc;
-      }, {} as Record<string, SkillCategory>)) 
+      }, {} as Record<string, SkillCategory>))
     : [];
-  // Sort categories if needed, or rely on manual order in code if we want specific order. 
-  // For now let's assume they come out okay or we fix sort later.
+
+  // Keep local static skills as fallback so Skills section never disappears
+  const staticSkillsGrouped: SkillCategory[] = skillsData.map((category) => ({
+    id: String(category.id),
+    title: category.title,
+    skills: category.skills.map((skill) => ({ name: skill.name })),
+  }));
+
+  // Merge by category title: DB takes precedence, static fills missing categories
+  const skillsMap = new Map<string, SkillCategory>();
+  dbSkillsGrouped.forEach((category) => {
+    skillsMap.set(category.title, category);
+  });
+  staticSkillsGrouped.forEach((category) => {
+    if (!skillsMap.has(category.title)) {
+      skillsMap.set(category.title, category);
+    }
+  });
+  const skillsGrouped = Array.from(skillsMap.values());
 
   // 3. Fetch Experiences with Images
   const { data: experiences } = await supabase
