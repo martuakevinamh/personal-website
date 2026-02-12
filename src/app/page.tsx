@@ -8,6 +8,8 @@ import Skills from "@/components/sections/Skills";
 import Projects from "@/components/sections/Projects";
 import Contact from "@/components/sections/Contact";
 import { supabase } from "@/lib/supabase";
+import { experienceData } from "@/data/experience";
+import { projectsData } from "@/data/projects";
 
 type ExperienceImageRaw = {
   src: string;
@@ -53,8 +55,8 @@ export default async function Home() {
     .select("*, images:experience_images(src, position, zoom)")
     .order("start_date", { ascending: false });
 
-  // Transform experiences
-  const experiencesTransformed = experiences?.map(exp => ({
+  // Transform experiences from database
+  const dbExperiences = experiences?.map(exp => ({
     ...exp,
     startDate: exp.start_date ? exp.start_date.split("-")[0] : "", // '2025-01-01' -> '2025'
     endDate: exp.end_date ? exp.end_date.split("-")[0] : "Sekarang",
@@ -68,6 +70,34 @@ export default async function Home() {
       : []
   })) || [];
 
+  // Keep local static entries as fallback so older data is never hidden
+  const staticExperiences = experienceData.map((exp) => ({
+    id: exp.id,
+    title: exp.title,
+    organization: exp.organization,
+    type: exp.type,
+    startDate: exp.startDate,
+    endDate: exp.endDate,
+    description: exp.description,
+    images: (exp.images || []).map((src) => ({
+      src,
+      position: "center center",
+      zoom: 1,
+    })),
+  }));
+
+  const experienceMap = new Map<string, (typeof dbExperiences)[number]>();
+  dbExperiences.forEach((exp) => {
+    experienceMap.set(`${exp.title}-${exp.organization}`, exp);
+  });
+  staticExperiences.forEach((exp) => {
+    const key = `${exp.title}-${exp.organization}`;
+    if (!experienceMap.has(key)) {
+      experienceMap.set(key, exp);
+    }
+  });
+  const experiencesTransformed = Array.from(experienceMap.values());
+
   // 4. Fetch Projects
   const { data: projects } = await supabase
     .from("projects")
@@ -80,7 +110,7 @@ export default async function Home() {
     .select("*")
     .order("sort_order");
 
-  const projectsTransformed = projects?.map(p => {
+  const dbProjects = projects?.map(p => {
     // Find images for this project
     const images = projectImages?.filter(img => img.project_id === p.id)
       .map(img => ({
@@ -94,6 +124,32 @@ export default async function Home() {
       githubUrl: p.github_url
     };
   }) || [];
+
+  // Keep local static entries as fallback so older data is never hidden
+  const staticProjects = projectsData.map((project) => ({
+    id: project.id,
+    title: project.title,
+    description: project.description,
+    images: project.image
+      ? [{ src: project.image, position: "center center" }]
+      : [],
+    tags: project.tags,
+    demoUrl: project.demoUrl,
+    githubUrl: project.githubUrl,
+    featured: project.featured,
+    status: project.status,
+  }));
+
+  const projectMap = new Map<string, (typeof dbProjects)[number]>();
+  dbProjects.forEach((project) => {
+    projectMap.set(project.title, project);
+  });
+  staticProjects.forEach((project) => {
+    if (!projectMap.has(project.title)) {
+      projectMap.set(project.title, project);
+    }
+  });
+  const projectsTransformed = Array.from(projectMap.values());
 
   return (
     <>
