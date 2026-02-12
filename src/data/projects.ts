@@ -19,7 +19,7 @@ export const projectsData: Project[] = [
     title: "Website GKPI Bandar Lampung",
     description:
     "Website resmi GKPI Bandar Lampung yang berfungsi sebagai platform informasi GKPI.",
-    image: "/images/projects/project-1.jpg",
+    image: "/window.svg",
     tags: ["Next.js", "TypeScript", "Tailwind", "PostgreSQL"],
     demoUrl: "https://website-gkpibdl.vercel.app/",
     githubUrl: "https://github.com/kevinlubis2909/website-gkpibdl",
@@ -33,7 +33,7 @@ export const projectsData: Project[] = [
     title: "Personal Website",
     description:
       "Website portfolio personal dengan desain modern dan animasi yang smooth.",
-    image: "/images/projects/project-3.jpg",
+    image: "/globe.svg",
     tags: ["Next.js", "Tailwind CSS", "TypeScript"],
     demoUrl: "https://personal-website.vercel.app/",
     githubUrl: "https://github.com/martuakevinamh/personal-website.git",
@@ -45,7 +45,7 @@ export const projectsData: Project[] = [
     title: "Game Pustaka Swarnadwipa",
     description:
       "Game edukasi interaktif untuk memperkenalkan koleksi dan layanan Pustaka Swarnadwipa kepada pengguna.",
-    image: "/images/projects/pustaka-swarndwipa1.jpeg",
+    image: "/images/projects/pustaka-swarnadwipa1.jpeg",
     tags: ["Godot Engine", "GDScript"],
     githubUrl: "https://github.com/FadilRifqi/pustaka-swarnadwipa.git",
     featured: false,
