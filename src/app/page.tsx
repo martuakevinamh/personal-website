@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { experienceData } from "@/data/experience";
 import { projectsData } from "@/data/projects";
 import { personalInfo as staticPersonalInfo } from "@/data/personal";
-import { skillsData } from "@/data/skills";
+
 
 type ExperienceImageRaw = {
   src: string;
