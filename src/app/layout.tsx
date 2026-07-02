@@ -9,13 +9,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio | Personal Website",
-  description: "Welcome to my portfolio. I am a Full Stack Developer passionate about creating modern and innovative web applications.",
-  keywords: ["portfolio", "web developer", "full stack", "next.js", "react"],
-  authors: [{ name: "Your Name" }],
+  title: "Martua Kevin | Informatics Engineering Graduate & Web Developer",
+  description: "Portfolio of Martua Kevin, a passionate Informatics Engineering Graduate and Web Developer building innovative digital solutions.",
+  keywords: ["Martua Kevin", "portfolio", "web developer", "software engineer", "indonesia"],
+  authors: [{ name: "Martua Kevin" }],
   openGraph: {
-    title: "Portfolio | Personal Website",
-    description: "Welcome to my portfolio. I am a Full Stack Developer passionate about creating modern and innovative web applications.",
+    title: "Martua Kevin | Portfolio",
+    description: "Portfolio of Martua Kevin, a passionate Informatics Engineering Graduate and Web Developer.",
     type: "website",
   },
 };
