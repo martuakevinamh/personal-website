@@ -13,20 +13,11 @@ export interface Education {
 export const educationData: Education[] = [
   {
     id: 1,
-    institution: "Institut Teknologi Sumatera",
-    degree: "Sarjana",
-    field: "Teknik Informatika",
+    institution: "Institut Teknologi Sumatera - South Lampung, Indonesia",
+    degree: "Bachelor of Informatics Engineering, 3.21/4.00",
+    field: "Informatics Engineering",
     startYear: 2022,
-    endYear: "Sekarang",
-    description: "IPK 3.2 - Fokus pada Web Development dan Machine Learning",
-  },
-  {
-    id: 2,
-    institution: "SMA Negeri 1 Matauli Pandan",
-    degree: "SMA",
-    field: "IPA",
-    startYear: 2019,
-    endYear: 2022,
-    description: "",
-  },
+    endYear: 2026,
+    description: "• Conducted pioneering research on microscopic visual detection using Deep Learning (YOLO-Para) to identify malaria parasites from medical samples.\n• Led organizational operations for a 1,300 attendee Christmast Celebratation",
+  }
 ];

@@ -14,11 +14,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "wyvegindcbfyrycyigfy.supabase.co",
+        hostname: "ixdaxtzxavxhesqhkuyi.supabase.co",
       },
     ],
-    // Disable image optimization for unoptimized images
-    unoptimized: false,
+    // Disable image optimization for unoptimized images (fixes local 500 errors)
+    unoptimized: true,
   },
 };
 

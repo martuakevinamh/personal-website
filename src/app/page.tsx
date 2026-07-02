@@ -7,188 +7,106 @@ import Experience from "@/components/sections/Experience";
 import Skills from "@/components/sections/Skills";
 import Projects from "@/components/sections/Projects";
 import Contact from "@/components/sections/Contact";
-import { supabase } from "@/lib/supabase";
-import { experienceData } from "@/data/experience";
-import { projectsData } from "@/data/projects";
-import { personalInfo as staticPersonalInfo } from "@/data/personal";
-import { skillsData } from "@/data/skills";
 
+import { getPersonal } from "@/lib/queries/personal";
+import { getSkillsByCategory } from "@/lib/queries/skills";
+import { getExperiences } from "@/lib/queries/experiences";
+import { getProjects } from "@/lib/queries/projects";
+import { getEducation } from "@/lib/queries/education";
 
-type ExperienceImageRaw = {
-  src: string;
-  position: string | null;
-  zoom: number | null;
-};
+// Removed static fallbacks, strictly using DB data
 
-export const dynamic = 'force-dynamic'; // Always fetch fresh data
-
-type SkillCategory = {
-  id: string;
-  title: string;
-  skills: { name: string; icon?: string }[];
-};
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // 1. Fetch Personal Info
-  const { data: personal } = await supabase.from("personal").select("*").single();
 
-  // Keep local static personal info as fallback so Hero/About never disappear
-  const personalTransformed = personal
-    ? personal
-    : {
-        name: staticPersonalInfo.name,
-        role: staticPersonalInfo.title,
-        bio: staticPersonalInfo.bio,
-        location: staticPersonalInfo.location,
-        email: staticPersonalInfo.email,
-        github_url: "",
-        linkedin_url: "",
-        instagram_url: "",
-        resume_url: staticPersonalInfo.resumeUrl,
-      };
+  // ── Fetch all data in parallel ──────────────────────────────
+  const [personal, skillsGroupedDB, experiencesDB, projectsDB, educationDB] = await Promise.all([
+    getPersonal(),
+    getSkillsByCategory(),
+    getExperiences(),
+    getProjects(),
+    getEducation(),
+  ]);
 
-  // 2. Fetch Skills (Group by category)
-  const { data: skillsRaw } = await supabase.from("skills").select("*").order("sort_order");
-  
-  // Group DB skills by category
-  const dbSkillsGrouped: SkillCategory[] = skillsRaw
-    ? Object.values(skillsRaw.reduce((acc: Record<string, SkillCategory>, skill) => {
-        if (!acc[skill.category]) {
-          acc[skill.category] = {
-            id: skill.category,
-            title: skill.category,
-            skills: [],
-          };
-        }
-        acc[skill.category].skills.push({ name: skill.name });
-        return acc;
-      }, {} as Record<string, SkillCategory>))
-    : [];
+  // ── Personal ─────────────────────────────────────────────────
+  const personalTransformed = personal ?? {
+    id: 0,
+    name: "",
+    role: "",
+    bio: "",
+    location: "",
+    email: "",
+    github_url: null,
+    linkedin_url: null,
+    instagram_url: null,
+    resume_url: null,
+    profile_images: [],
+    stats: [],
+    created_at: "",
+  };
 
-  // Keep local static skills as fallback so Skills section never disappears
-  const staticSkillsGrouped: SkillCategory[] = skillsData.map((category) => ({
-    id: String(category.id),
-    title: category.title,
-    skills: category.skills.map((skill) => ({ name: skill.name })),
+  // ── Skills ───────────────────────────────────────────────────
+  const skillsForUI = Object.entries(skillsGroupedDB).map(([cat, skills]) => ({
+    id: cat,
+    title: cat,
+    skills,
   }));
 
-  // Merge by category title: DB takes precedence, static fills missing categories
-  const skillsMap = new Map<string, SkillCategory>();
-  dbSkillsGrouped.forEach((category) => {
-    skillsMap.set(category.title, category);
-  });
-  staticSkillsGrouped.forEach((category) => {
-    if (!skillsMap.has(category.title)) {
-      skillsMap.set(category.title, category);
-    }
-  });
-  const skillsGrouped = Array.from(skillsMap.values());
-
-  // 3. Fetch Experiences with Images
-  const { data: experiences } = await supabase
-    .from("experiences")
-    .select("*, images:experience_images(src, position, zoom)")
-    .order("start_date", { ascending: false });
-
-  // Transform experiences from database
-  const dbExperiences = experiences?.map(exp => ({
-    ...exp,
-    startDate: exp.start_date ? exp.start_date.split("-")[0] : "", // '2025-01-01' -> '2025'
-    endDate: exp.end_date ? exp.end_date.split("-")[0] : "Sekarang",
-    // Pass full object now, defaulting zoom to 1 if missing
-    images: Array.isArray(exp.images) 
-      ? (exp.images as ExperienceImageRaw[]).map((img) => ({
-          src: img.src,
-          position: img.position || "center center",
-          zoom: img.zoom || 1
-        })) 
-      : []
-  })) || [];
-
-  // Keep local static entries as fallback so older data is never hidden
-  const staticExperiences = experienceData.map((exp) => ({
-    id: exp.id,
-    title: exp.title,
-    organization: exp.organization,
-    type: exp.type,
-    startDate: exp.startDate,
-    endDate: exp.endDate,
-    description: exp.description,
-    images: (exp.images || []).map((src) => ({
-      src,
-      position: "center center",
+  // ── Experiences ──────────────────────────────────────────────
+  const experiencesForUI = experiencesDB.map((e) => ({
+    id: e.id,
+    title: e.title,
+    organization: e.organization,
+    type: e.type,
+    startDate: e.start_date ? e.start_date.slice(0, 4) : "",
+    endDate: e.end_date ? e.end_date.slice(0, 4) : "Sekarang",
+    description: e.description,
+    images: e.experience_images.map((img) => ({
+      src: img.src,
+      position: img.position,
       zoom: 1,
     })),
   }));
 
-  const experienceMap = new Map<string, (typeof dbExperiences)[number]>();
-  dbExperiences.forEach((exp) => {
-    experienceMap.set(`${exp.title}-${exp.organization}`, exp);
-  });
-  staticExperiences.forEach((exp) => {
-    const key = `${exp.title}-${exp.organization}`;
-    if (!experienceMap.has(key)) {
-      experienceMap.set(key, exp);
-    }
-  });
-  const experiencesTransformed = Array.from(experienceMap.values());
+  type ProjectForUI = {
+    id: number;
+    title: string;
+    description: string;
+    images: { src: string; position: string }[];
+    tags: string[];
+    demoUrl?: string;
+    githubUrl?: string;
+    featured: boolean;
+    status: "ongoing" | "completed";
+  };
 
-  // 4. Fetch Projects
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const projectsForUI: ProjectForUI[] = projectsDB.map((p) => ({
+    id: p.id,
+    title: p.title,
+    description: p.description ?? "",
+    images: p.project_images.map((img) => ({ src: img.src, position: img.position })),
+    tags: p.tags ?? [],
+    demoUrl: p.demo_url ?? undefined,
+    githubUrl: p.github_url ?? undefined,
+    featured: p.featured,
+    status: (p.status === "ongoing" ? "ongoing" : "completed") as "ongoing" | "completed",
+  }));
 
-  // Fetch project images
-  const { data: projectImages } = await supabase
-    .from("project_images")
-    .select("*")
-    .order("sort_order");
-
-  const dbProjects = projects?.map(p => {
-    // Find images for this project
-    const images = projectImages?.filter(img => img.project_id === p.id)
-      .map(img => ({
-        src: img.src,
-        position: img.position || "center center"
-      })) || [];
-    return {
-      ...p,
-      images, // Pass all images for slideshow
-      demoUrl: p.demo_url,
-      githubUrl: p.github_url
-    };
-  }) || [];
-
-  // Use DB projects if available, otherwise fall back to static data
-  const projectsTransformed = dbProjects.length > 0
-    ? dbProjects
-    : projectsData.map((project) => ({
-        id: project.id,
-        title: project.title,
-        description: project.description,
-        images: project.images || [],
-        tags: project.tags,
-        demoUrl: project.demoUrl,
-        githubUrl: project.githubUrl,
-        featured: project.featured,
-        status: project.status,
-      }));
-
+  // ────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
       <main>
         <Hero personalInfo={personalTransformed} />
         <About personalInfo={personalTransformed} />
-        {/* Education is static for now or can be added later */}
-        <Education />
-        <Experience experiences={experiencesTransformed} />
-        <Skills skills={skillsGrouped} />
-        <Projects projects={projectsTransformed} />
-        <Contact />
+        <Education educationData={educationDB} />
+        <Experience experiences={experiencesForUI} />
+        <Skills skills={skillsForUI} />
+        <Projects projects={projectsForUI} />
+        <Contact personalInfo={personalTransformed} />
       </main>
-      <Footer />
+      <Footer personalInfo={personalTransformed} />
     </>
   );
 }

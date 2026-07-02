@@ -1,465 +1,349 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { uploadImage } from "@/lib/storage";
-import ImagePositionPicker from "@/components/admin/ImagePositionPicker";
-import { toast } from "react-hot-toast";
-import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useState, useEffect } from "react";
+import { getProjects, createProject, updateProject, deleteProject, addProjectImage, deleteProjectImage } from "@/lib/queries/projects";
+import { uploadImage, deleteImage } from "@/lib/storage";
+import { ProjectWithImages, ProjectPayload } from "@/lib/types";
+import toast from "react-hot-toast";
+import Image from "next/image";
+import { Plus, FolderGit2, Edit2, Trash2, Star } from "lucide-react";
 
-type ProjectImage = {
-  id?: number;
-  src: string;
-  position: string;
-  zoom: number;
-};
-
-type Project = {
-  id: number;
-  title: string;
-  description: string;
-  images: ProjectImage[];
-  tags: string[];
-  demo_url: string;
-  github_url: string;
-  featured: boolean;
-  status: "ongoing" | "completed";
-};
-
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+export default function AdminProjects() {
+  const [projects, setProjects] = useState<ProjectWithImages[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // Form State
-  const [formData, setFormData] = useState<Project>({
-    id: 0,
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [formData, setFormData] = useState<Partial<ProjectPayload> & { id?: number }>({
     title: "",
     description: "",
-    images: [],
     tags: [],
     demo_url: "",
     github_url: "",
     featured: false,
     status: "ongoing",
   });
+  
+  const [tagInput, setTagInput] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Helper for tags input
-  const [tagsInput, setTagsInput] = useState("");
-
-  const DRAFT_KEY = "admin_project_draft";
-
-  // Load draft from localStorage on mount
   useEffect(() => {
-    fetchProjects();
-    const savedDraft = localStorage.getItem(DRAFT_KEY);
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        setFormData(parsed.formData);
-        setTagsInput(parsed.tagsInput || "");
-        setShowForm(true);
-        toast.success("Draft restored", { icon: "📝" });
-      } catch { /* ignore invalid JSON */ }
-    }
+    loadData();
   }, []);
 
-  // Auto-save draft to localStorage when formData changes
-  useEffect(() => {
-    if (showForm || editingId) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, tagsInput }));
-    }
-  }, [formData, tagsInput, showForm, editingId]);
-
-  const fetchProjects = async () => {
+  async function loadData() {
     setLoading(true);
-    
-    // Fetch projects
-    const { data: projs, error: projError } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (projError) {
-      toast.error("Error fetching projects: " + projError.message);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch images for all projects
-    const { data: images, error: imgError } = await supabase
-      .from("project_images")
-      .select("*")
-      .order("sort_order");
-
-    if (imgError) {
-      toast.error("Error fetching images: " + imgError.message);
-      setLoading(false);
-      return;
-    }
-
-    // Combine data
-    const combined = projs.map((p) => ({
-      ...p,
-      images: images?.filter((i) => i.project_id === p.id)
-        .map(i => ({
-          src: i.src,
-          position: i.position,
-          id: i.id,
-          zoom: i.zoom || 1
-        })) || [],
-    }));
-
-    setProjects(combined);
+    const data = await getProjects();
+    setProjects(data);
     setLoading(false);
-  };
+  }
 
-  const handleEdit = (project: Project) => {
-    setEditingId(project.id);
-    setFormData(project);
-    setTagsInput(project.tags ? project.tags.join(", ") : "");
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
-    setShowForm(false);
+  function handleEdit(proj: ProjectWithImages) {
     setFormData({
-      id: 0,
+      id: proj.id,
+      title: proj.title,
+      description: proj.description || "",
+      tags: proj.tags || [],
+      demo_url: proj.demo_url || "",
+      github_url: proj.github_url || "",
+      featured: proj.featured,
+      status: proj.status as "ongoing" | "completed",
+    });
+    setTagInput("");
+    setIsModalOpen(true);
+  }
+
+  function handleNew() {
+    setFormData({
       title: "",
       description: "",
-      images: [],
       tags: [],
       demo_url: "",
       github_url: "",
       featured: false,
       status: "ongoing",
     });
-    setTagsInput("");
-    localStorage.removeItem(DRAFT_KEY); // Clear draft
+    setTagInput("");
+    setIsModalOpen(true);
+  }
+
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>, fieldName: keyof ProjectPayload) => {
+    const { value } = e.target;
+    if (value && !/^https?:\/\//i.test(value)) {
+      setFormData((prev) => ({ ...prev, [fieldName]: `https://${value}` }));
+    }
   };
 
-  const handleAddImage = () => {
-    setFormData({
-      ...formData,
-      images: [...formData.images, { src: "", position: "center center", zoom: 1 }],
-    });
-  };
-
-  const handleRemoveImage = (index: number) => {
-    const newImages = [...formData.images];
-    newImages.splice(index, 1);
-    setFormData({ ...formData, images: newImages });
-  };
-
-  const handleImageChange = (index: number, field: "src" | "position" | "zoom", value: string | number) => {
-    const newImages = [...formData.images];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newImages[index] = { ...newImages[index], [field]: value } as any;
-    setFormData({ ...formData, images: newImages });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const loadingToast = toast.loading(editingId ? "Updating..." : "Creating...");
-
-    try {
-      const payload: {
-        id?: number;
-        title: string;
-        description: string;
-        tags: string[];
-        demo_url: string;
-        github_url: string;
-        featured: boolean;
-        status: "ongoing" | "completed";
-      } = {
-        title: formData.title,
-        description: formData.description,
-        tags: tagsInput.split(",").map(t => t.trim()).filter(t => t),
-        demo_url: formData.demo_url,
-        github_url: formData.github_url,
-        featured: formData.featured,
-        status: formData.status,
-      };
-
-      if (editingId) payload.id = editingId;
-
-      const { data: savedProj, error: projError } = await supabase
-        .from("projects")
-        .upsert(payload)
-        .select()
-        .single();
-
-      if (projError) throw projError;
-
-      // Handle Images
-      if (savedProj) {
-        // Delete old
-        await supabase.from("project_images").delete().eq("project_id", savedProj.id);
-
-        // Insert new
-        if (formData.images.length > 0) {
-          const imagesPayload = formData.images.map((img, idx) => ({
-            project_id: savedProj.id,
-            src: img.src,
-            position: img.position,
-            zoom: img.zoom,
-            sort_order: idx,
-          }));
-          const { error: imgError } = await supabase.from("project_images").insert(imagesPayload);
-          if (imgError) throw imgError;
-        }
+  function handleAddTag(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault();
+      if (!formData.tags?.includes(tagInput.trim())) {
+        setFormData({ ...formData, tags: [...(formData.tags || []), tagInput.trim()] });
       }
-
-      toast.dismiss(loadingToast);
-      toast.success("Project saved successfully!");
-      handleCancel();
-      fetchProjects();
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Error saving: " + (error as Error).message);
+      setTagInput("");
     }
-  };
+  }
 
-  const handleDelete = async () => {
-    if (!deletingId) return;
+  function removeTag(tagToRemove: string) {
+    setFormData({ ...formData, tags: formData.tags?.filter(t => t !== tagToRemove) });
+  }
 
-    const loadingToast = toast.loading("Deleting...");
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    
+    const payload: ProjectPayload = {
+      title: formData.title!,
+      description: formData.description || "",
+      tags: formData.tags || [],
+      demo_url: formData.demo_url || null,
+      github_url: formData.github_url || null,
+      featured: formData.featured || false,
+      status: formData.status as "ongoing" | "completed",
+    };
+
     try {
-      const { error } = await supabase.from("projects").delete().eq("id", deletingId);
-      if (error) throw error;
-
-      toast.dismiss(loadingToast);
-      toast.success("Project deleted");
-      fetchProjects();
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Error deleting: " + (error as Error).message);
+      if (formData.id) {
+        await updateProject(formData.id, payload);
+        toast.success("Project updated!");
+      } else {
+        await createProject(payload);
+        toast.success("Project added!");
+      }
+      setIsModalOpen(false);
+      loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
-      setDeletingId(null);
+      setSaving(false);
     }
-  };
+  }
 
-  if (loading) return <div>Loading...</div>;
+  async function handleDelete(id: number) {
+    if (!confirm("Are you sure you want to delete this project? All images will be deleted too.")) return;
+    const ok = await deleteProject(id);
+    if (ok) {
+      toast.success("Project deleted");
+      loadData();
+    } else {
+      toast.error("Failed to delete project");
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, projId: number) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingImage(true);
+    toast.loading("Uploading image...", { id: "upload" });
+    
+    const url = await uploadImage(file, `projects/${projId}`);
+    if (url) {
+      await addProjectImage({
+        project_id: projId,
+        src: url,
+        position: "center center",
+        sort_order: 0,
+        zoom: 1
+      });
+      toast.success("Image uploaded!", { id: "upload" });
+      loadData();
+    } else {
+      toast.error("Failed to upload image", { id: "upload" });
+    }
+    setUploadingImage(false);
+    e.target.value = "";
+  }
+
+  async function handleImageDelete(imgId: number, url: string) {
+    if (!confirm("Delete this image?")) return;
+    await deleteProjectImage(imgId);
+    await deleteImage(url);
+    toast.success("Image deleted");
+    loadData();
+  }
+
+  if (loading && projects.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="w-8 h-8 border-4 border-zinc-800 border-t-violet-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold gradient-text">Manage Projects</h1>
-        {!showForm && !editingId && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-primary py-2 px-6 flex items-center gap-2"
-          >
-            <span>+</span> Add New Project
-          </button>
+    <div className="max-w-6xl animate-[fadeIn_0.5s_ease]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Projects Management</h1>
+          <p className="text-zinc-400">Add and update your portfolio projects and their image galleries.</p>
+        </div>
+        <button
+          onClick={handleNew}
+          className="bg-linear-to-r from-violet-600 to-fuchsia-600 text-white font-medium px-5 py-2.5 rounded-xl transition-all hover:scale-[1.02] hover:shadow-[0_4px_20px_rgba(139,92,246,0.4)] flex items-center gap-2"
+        >
+          <Plus size={18} /> Add Project
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {projects.length === 0 ? (
+          <div className="col-span-full glass-card p-12 text-center text-zinc-500 flex flex-col items-center">
+            <FolderGit2 size={48} className="mb-4 text-zinc-600" />
+            <p>No projects added yet.</p>
+          </div>
+        ) : (
+          projects.map((proj) => (
+            <div key={proj.id} className="glass-card p-6 border border-white/5 relative flex flex-col">
+              {proj.featured && (
+                <div className="absolute -top-3 -right-3 bg-amber-500 text-black font-bold text-xs px-3 py-1 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.5)] z-10">
+                  FEATURED
+                </div>
+              )}
+              
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">{proj.title}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${proj.status === 'completed' ? 'bg-violet-500/20 text-violet-400' : 'bg-green-500/20 text-green-400'}`}>
+                      {proj.status?.toUpperCase() || ''}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => handleEdit(proj)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title="Edit details">
+                    <Edit2 size={16} />
+                  </button>
+                  <button onClick={() => handleDelete(proj.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors" title="Delete project">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {proj.tags?.map(tag => (
+                  <span key={tag} className="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] text-zinc-300">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-sm text-zinc-400 line-clamp-2 mb-6 flex-1">{proj.description}</p>
+
+              {/* Gallery Manager inside card */}
+              <div className="mt-auto border-t border-white/10 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-zinc-500">IMAGE GALLERY ({proj.project_images?.length || 0})</span>
+                  <label className="cursor-pointer text-xs font-medium bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md transition-colors">
+                    {uploadingImage ? "..." : "+ Add Image"}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, proj.id)} disabled={uploadingImage} />
+                  </label>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {proj.project_images?.map(img => (
+                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/10 group/img">
+                      <Image src={img.src} alt="" fill className="object-cover" />
+                      <button
+                        onClick={() => handleImageDelete(img.id, img.src)}
+                        className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-white text-[10px] font-bold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
-      <ConfirmModal
-        isOpen={!!deletingId}
-        title="Delete Project"
-        message="Are you sure you want to delete this project?"
-        onConfirm={handleDelete}
-        onClose={() => setDeletingId(null)}
-      />
-
-      {/* Form */}
-      {(showForm || editingId) && (
-        <div className="glass-card p-6 mb-10 fade-in">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold">{editingId ? "Edit Project" : "Add New Project"}</h3>
-            <button onClick={handleCancel} className="text-zinc-500 hover:text-white">✕</button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as "ongoing" | "completed" })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-                >
-                  <option value="ongoing">Ongoing</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1">Description</label>
-              <textarea
-                required
-                rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-              />
-            </div>
-
-            {/* Images Section */}
-            <div className="border border-zinc-800 rounded-xl p-4 bg-black/20">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold">Images</h4>
-                <button type="button" onClick={handleAddImage} className="text-sm btn-ghost px-3 py-1 bg-zinc-800 rounded">
-                  + Add Image
-                </button>
+      {/* Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-[#12121a] border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 overflow-y-auto max-h-[90vh] animate-[modalIn_0.3s_ease]">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              {formData.id ? "Edit Project" : "Add Project"}
+            </h2>
+            
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Project Title</label>
+                <input type="text" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50" placeholder="e.g. Portfolio V2" />
               </div>
 
-              <div className="space-y-4">
-                {formData.images.map((img, index) => (
-                  <div key={index} className="flex gap-4 items-start bg-zinc-900/50 p-3 rounded-lg">
-                    <div className="flex-1 space-y-4">
-                      <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Image</label>
-                        <label className={`
-                          flex items-center justify-center w-full px-4 py-2 rounded-lg cursor-pointer transition-colors border border-dashed
-                          ${img.src ? 'bg-zinc-900 border-zinc-700 hover:bg-zinc-800' : 'bg-violet-500/10 border-violet-500/50 hover:bg-violet-500/20 text-violet-300'}
-                        `}>
-                          <span className="text-sm font-medium">
-                            {img.src ? "🔄 Change Image" : "📤 Upload Image"}
-                          </span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Description</label>
+                <textarea rows={4} value={formData.description || ""} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 resize-y" placeholder="Describe the project..." />
+              </div>
 
-                              const url = await uploadImage(file, "projects");
-                              if (url) {
-                                handleImageChange(index, "src", url);
-                              } else {
-                                toast.error("Failed to upload image");
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Position & Zoom</label>
-                        <ImagePositionPicker
-                          value={img.position}
-                          imageUrl={img.src}
-                          zoom={img.zoom || 1}
-                          onZoomChange={(val) => handleImageChange(index, "zoom", val)}
-                          onChange={(val: string) => handleImageChange(index, "position", val)}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      className="text-red-500 hover:text-red-400 mt-8"
-                      title="Remove Image"
-                    >
-                      🗑️
-                    </button>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tags (Press Enter to add)</label>
+                <div className="p-3 bg-black/40 border border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-violet-500/50 flex flex-wrap gap-2">
+                  {formData.tags?.map(tag => (
+                    <span key={tag} className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-md text-xs text-white">
+                      {tag}
+                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-400 ml-1">×</button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleAddTag}
+                    className="bg-transparent border-none outline-none text-white text-sm min-w-30 flex-1"
+                    placeholder="e.g. Next.js"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Live Demo URL</label>
+                  <input type="url" value={formData.demo_url || ""} onBlur={(e) => handleUrlBlur(e, 'demo_url')} onChange={(e) => setFormData({...formData, demo_url: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 text-sm" placeholder="https://..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">GitHub Repo URL</label>
+                  <input type="url" value={formData.github_url || ""} onBlur={(e) => handleUrlBlur(e, 'github_url')} onChange={(e) => setFormData({...formData, github_url: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 text-sm" placeholder="https://github.com/..." />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5 pt-2">
+                <label className="flex items-center gap-3 p-4 bg-black/40 border border-white/10 rounded-xl cursor-pointer hover:border-violet-500/30 transition-colors">
+                  <input type="checkbox" checked={formData.featured} onChange={(e) => setFormData({...formData, featured: e.target.checked})} className="w-5 h-5 rounded text-violet-500 focus:ring-violet-500/50" />
+                  <div>
+                    <div className="text-sm font-bold text-white flex items-center gap-1">Featured Project <Star size={14} className="text-amber-500 fill-amber-500" /></div>
+                    <div className="text-xs text-zinc-400">Showcases prominently</div>
                   </div>
-                ))}
-                {formData.images.length === 0 && <p className="text-sm text-zinc-500 italic">No images added</p>}
+                </label>
+                
+                <div className="flex gap-2">
+                  <label className={`flex-1 flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all ${formData.status === 'ongoing' ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-black/40 border-white/10 text-zinc-400'}`}>
+                    <input type="radio" name="status" className="hidden" checked={formData.status === 'ongoing'} onChange={() => setFormData({...formData, status: 'ongoing'})} />
+                    In Progress
+                  </label>
+                  <label className={`flex-1 flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all ${formData.status === 'completed' ? 'bg-violet-500/20 border-violet-500/50 text-violet-400' : 'bg-black/40 border-white/10 text-zinc-400'}`}>
+                    <input type="radio" name="status" className="hidden" checked={formData.status === 'completed'} onChange={() => setFormData({...formData, status: 'completed'})} />
+                    Completed
+                  </label>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1">Tags (comma separated)</label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-                placeholder="Next.js, TypeScript, Tailwind"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Demo URL</label>
-                <input
-                  type="text"
-                  value={formData.demo_url || ""}
-                  onChange={(e) => setFormData({ ...formData, demo_url: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">GitHub URL</label>
-                <input
-                  type="text"
-                  value={formData.github_url || ""}
-                  onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={formData.featured}
-                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                className="w-4 h-4 rounded bg-zinc-900 border-zinc-800 text-violet-500 focus:ring-violet-500"
-              />
-              <label htmlFor="featured" className="text-sm text-zinc-300">Featured Project (Show on Home)</label>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <button type="submit" className="flex-1 btn-primary py-3">
-                {editingId ? "Update Project" : "Create Project"}
-              </button>
-              {editingId && (
-                <button type="button" onClick={handleCancel} className="px-6 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700">
+              <div className="flex justify-end gap-3 pt-6 border-t border-white/10">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-white font-medium hover:bg-white/10 transition-colors">
                   Cancel
                 </button>
-              )}
-            </div>
-          </form>
+                <button type="submit" disabled={saving} className="bg-linear-to-r from-violet-600 to-fuchsia-600 text-white font-medium px-6 py-2.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-50">
+                  {saving ? "Saving..." : "Save Project"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
-      {/* List */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {projects.map((project) => (
-          <div key={project.id} className="glass-card p-4 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-lg">{project.title}</h4>
-                <span className={`text-xs px-2 py-1 rounded ${project.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
-                  {project.status}
-                </span>
-              </div>
-              <p className="text-sm text-zinc-400 line-clamp-2">{project.description}</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {project.tags?.map((t, i) => (
-                  <span key={i} className="text-xs bg-zinc-800 text-zinc-500 px-1 rounded">{t}</span>
-                ))}
-              </div>
-              <div className="text-xs text-zinc-500 mt-2">{project.images.length} image(s)</div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-zinc-800">
-              <button onClick={() => handleEdit(project)} className="text-violet-400 text-sm hover:underline">Edit</button>
-              <button onClick={() => setDeletingId(project.id)} className="text-red-400 text-sm hover:underline">Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

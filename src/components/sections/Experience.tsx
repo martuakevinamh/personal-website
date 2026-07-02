@@ -2,14 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-// import { experienceData, type Experience } from "@/data/experience";
+import { Briefcase, ClipboardList, Inbox } from "lucide-react";
 
-type ExperienceImage = {
-  src: string;
-  position?: string;
-  zoom?: number;
-};
-
+type ExperienceImage = { src: string; position?: string; zoom?: number };
 type Experience = {
   id: number;
   title: string;
@@ -17,164 +12,145 @@ type Experience = {
   type: string;
   startDate: string;
   endDate: string;
-  description: string;
+  description: string | null;
   images: ExperienceImage[];
 };
 
-// Image Slideshow Component
 function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: string }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [idx, setIdx] = useState(0);
 
   useEffect(() => {
     if (images.length <= 1) return;
-    
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
+    const t = setInterval(() => setIdx((p) => (p + 1) % images.length), 3000);
+    return () => clearInterval(t);
   }, [images.length]);
 
   if (images.length === 0) {
     return (
-      <div className="w-full h-48 bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500">
-        No Image
+      <div className="w-full h-44 bg-zinc-900 rounded-xl flex items-center justify-center text-zinc-700">
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-48 rounded-lg overflow-hidden mb-3 group">
-      {images.map((img, index) => (
+    <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4">
+      {images.map((img, i) => (
         <Image
           key={img.src}
           src={img.src}
-          alt={`${alt} - ${index + 1}`}
+          alt={`${alt} ${i + 1}`}
           fill
-          className={`object-cover transition-opacity duration-500 ${
-            index === currentIndex ? "opacity-100" : "opacity-0"
-          }`}
-          style={{ 
-            objectPosition: img.position || "center center",
-            transform: `scale(${img.zoom || 1})`,
-            transformOrigin: img.position || "center center"
-          }}
+          className={`object-cover transition-opacity duration-600 ${i === idx ? "opacity-100" : "opacity-0"}`}
+          style={{ objectPosition: img.position || "center", transform: `scale(${img.zoom || 1})` }}
+          sizes="400px"
         />
       ))}
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
-      
-      {/* Image counter */}
+      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
       {images.length > 1 && (
-        <div className="absolute bottom-2 right-2 text-xs bg-black/60 px-2 py-1 rounded">
-          {currentIndex + 1} / {images.length}
-        </div>
-      )}
-
-      {/* Dots indicator */}
-      {images.length > 1 && (
-        <div className="absolute bottom-2 left-2 flex gap-1">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${
-                index === currentIndex ? "bg-white" : "bg-white/40"
-              }`}
-            />
-          ))}
-        </div>
+        <>
+          <div className="absolute bottom-2 right-2 text-[10px] bg-black/50 text-white/70 px-2 py-0.5 rounded-full">
+            {idx + 1}/{images.length}
+          </div>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`rounded-full transition-all ${i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-// Experience Card Component
-function ExperienceCard({ exp, index, color }: { exp: Experience; index: number; color: string }) {
+function ExpCard({ exp, color, index }: { exp: Experience; color: string; index: number }) {
+  const isPresent = !exp.endDate || exp.endDate === "Sekarang";
   return (
-    <div
-      className="glass-card p-5 fade-in"
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      {/* Image Slideshow */}
+    <div className="glass-card p-5 fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
       <ImageSlideshow images={exp.images} alt={exp.organization} />
-
-      {/* Content */}
-      <div className="flex justify-between items-start mb-2">
-        <h4 className={`font-bold ${color}`}>{exp.title}</h4>
-        <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded whitespace-nowrap ml-2">
-          {exp.startDate} - {exp.endDate}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h4 className={`font-bold text-sm leading-tight ${color}`}>{exp.title}</h4>
+        <span
+          className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+            isPresent
+              ? "bg-green-500/10 border-green-500/20 text-green-400"
+              : "bg-zinc-800 border-zinc-700 text-zinc-500"
+          }`}
+        >
+          {exp.startDate} – {isPresent ? "Now" : exp.endDate}
         </span>
       </div>
-      <p className="text-sm text-zinc-300 mb-2">{exp.organization}</p>
-      <p className="text-sm text-zinc-400">{exp.description}</p>
+      <p className="text-sm text-zinc-300 mb-2 font-medium">{exp.organization}</p>
+      {exp.description && (
+        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3">{exp.description}</p>
+      )}
     </div>
   );
 }
 
 export default function Experience({ experiences }: { experiences: Experience[] }) {
-  // Guard clause for missing data
+  const [tab, setTab] = useState<"organization" | "committee">("organization");
   if (!experiences) return null;
 
-  const organizations = experiences.filter((exp) => exp.type === "organization");
-  const committees = experiences.filter((exp) => exp.type === "committee");
+  const orgs = experiences.filter((e) => e.type === "organization");
+  const coms = experiences.filter((e) => e.type === "committee");
+  const list = tab === "organization" ? orgs : coms;
 
   return (
-    <section id="experience" className="py-24 relative">
-      <div className="max-w-6xl mx-auto px-6">
-        {/* Section Title */}
+    <section id="experience" className="py-28 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(217,70,239,0.04),transparent)]" />
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
         <h2 className="section-title">
           <span className="gradient-text">Experience</span>
         </h2>
-        <p className="section-subtitle">
-          My organizational and committee experience
-        </p>
+        <p className="section-subtitle">My organizational and committee experience</p>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Organisasi */}
-          <div>
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="text-2xl">🏢</span>
-              Organisasi
-            </h3>
-            <div className="space-y-6">
-              {organizations.length > 0 ? (
-                organizations.map((exp, index) => (
-                  <ExperienceCard
-                    key={exp.id}
-                    exp={exp}
-                    index={index}
-                    color="text-violet-400"
-                  />
-                ))
-              ) : (
-                <p className="text-zinc-500 italic">No organization experience listed.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Kepanitiaan */}
-          <div>
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="text-2xl">📋</span>
-              Kepanitiaan
-            </h3>
-            <div className="space-y-6">
-              {committees.length > 0 ? (
-                committees.map((exp, index) => (
-                  <ExperienceCard
-                    key={exp.id}
-                    exp={exp}
-                    index={index}
-                    color="text-fuchsia-400"
-                  />
-                ))
-              ) : (
-                 <p className="text-zinc-500 italic">No committee experience listed.</p>
-              )}
-            </div>
+        {/* Tabs */}
+        <div className="flex justify-center mb-10">
+          <div className="glass rounded-full p-1 flex gap-1">
+            {([
+              { key: "organization", label: <span className="flex items-center gap-1.5"><Briefcase size={14} /> Organisasi</span>, count: orgs.length },
+              { key: "committee",    label: <span className="flex items-center gap-1.5"><ClipboardList size={14} /> Kepanitiaan</span>, count: coms.length },
+            ] as const).map(({ key, label, count }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  tab === key
+                    ? "bg-linear-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_0_16px_rgba(139,92,246,0.4)]"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {label} <span className="opacity-60 text-xs">({count})</span>
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* Grid */}
+        {list.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {list.map((exp, i) => (
+              <ExpCard
+                key={exp.id}
+                exp={exp}
+                index={i}
+                color={tab === "organization" ? "text-violet-400" : "text-fuchsia-400"}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 text-zinc-600 flex flex-col items-center">
+            <Inbox size={48} className="mb-4 opacity-50" />
+            <p>No {tab} experience listed yet.</p>
+          </div>
+        )}
       </div>
     </section>
   );

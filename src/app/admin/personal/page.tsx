@@ -1,191 +1,494 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { toast } from "react-hot-toast";
+import { uploadImage, deleteImage } from "@/lib/storage";
+import toast from "react-hot-toast";
+import Image from "next/image";
+import { Plus, Trash2, Move } from "lucide-react";
+import React, { useRef } from "react";
 
-export default function PersonalPage() {
+type PersonalData = {
+  id: number;
+  name: string;
+  role: string;
+  bio: string;
+  location: string;
+  email: string;
+  github_url: string;
+  linkedin_url: string;
+  instagram_url: string;
+  resume_url: string;
+  profile_images: { src: string; position?: string; zoom?: number }[];
+  stats: { label: string; value: string }[];
+};
+
+function DraggableProfileImage({
+  img,
+  index,
+  onUpdate,
+  onRemove
+}: {
+  img: { src: string; position?: string; zoom?: number };
+  index: number;
+  onUpdate: (index: number, field: "position" | "zoom", value: string | number) => void;
+  onRemove: (src: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Parse position "50% 50%" or default
+  const posStr = img.position || "50% 50%";
+  const [posX, posY] = posStr.split(" ").map(p => parseFloat(p) || 50);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault(); // Prevent text selection/scrolling
+    const startX = e.clientX;
+    const startY = e.clientY;
+    
+    const initialPosX = posX;
+    const initialPosY = posY;
+    
+    // Using window events so it doesn't stop if mouse leaves the container
+    const handlePointerMove = (ev: PointerEvent) => {
+      const deltaX = ev.clientX - startX;
+      const deltaY = ev.clientY - startY;
+      
+      // Sensitivity factor - smaller means slower drag
+      const sensitivity = 0.2 / (img.zoom || 1);
+      
+      let newX = initialPosX - (deltaX * sensitivity);
+      let newY = initialPosY - (deltaY * sensitivity);
+      
+      // Clamp between 0 and 100
+      newX = Math.max(0, Math.min(100, newX));
+      newY = Math.max(0, Math.min(100, newY));
+      
+      onUpdate(index, "position", `${newX.toFixed(2)}% ${newY.toFixed(2)}%`);
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 shrink-0 border border-white/10 rounded-xl p-3 bg-black/20 w-48">
+      <div 
+        ref={containerRef}
+        className="relative w-full aspect-square rounded-lg overflow-hidden group cursor-move touch-none"
+        onPointerDown={handlePointerDown}
+      >
+        <Image 
+          src={img.src} 
+          alt={`Profile ${index}`} 
+          fill 
+          className="object-cover pointer-events-none" 
+          style={{
+            objectPosition: img.position || "50% 50%",
+            transform: `scale(${img.zoom || 1})`
+          }}
+        />
+        
+        {/* Overlay instructions & remove button */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-1 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
+            <Move size={12} /> Drag to position
+          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRemove(img.src); }}
+            className="bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors pointer-events-auto"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      
+      {/* Zoom Control */}
+      <div className="space-y-1 mt-2 text-xs">
+        <label className="text-zinc-400 font-semibold uppercase tracking-wide flex justify-between">
+          Zoom <span>{img.zoom || 1}x</span>
+        </label>
+        <input 
+          type="range" 
+          min="1" 
+          max="3" 
+          step="0.05" 
+          value={img.zoom || 1}
+          onChange={(e) => onUpdate(index, "zoom", parseFloat(e.target.value))}
+          className="w-full accent-violet-500"
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPersonal() {
+  const [data, setData] = useState<Partial<PersonalData>>({
+    profile_images: [],
+    stats: [],
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    id: 0,
-    name: "",
-    role: "", // Mapped to 'title' in frontend
-    bio: "",
-    location: "",
-    email: "",
-    github_url: "",
-    linkedin_url: "",
-    instagram_url: "",
-    resume_url: "",
-  });
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchPersonal();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("personal")
-        .select("*")
-        .single();
+  async function fetchPersonal() {
+    const { data: res, error } = await supabase.from("personal").select("*").maybeSingle();
+    if (error) {
+      toast.error("Failed to fetch data");
+    } else if (res) {
+      setData({
+        ...res,
+        profile_images: res.profile_images || [],
+        stats: res.stats || [],
+      });
+    }
+    setLoading(false);
+  }
 
-      if (error && error.code !== "PGRST116") { // PGRST116 is "The result contains 0 rows"
-        console.error("Error fetching personal info:", error);
-      }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-      if (data) {
-        setFormData(data);
-      }
-    } catch (error) {
-      toast.error("Error loading data: " + (error as Error).message);
-    } finally {
-      setLoading(false);
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (value && !/^https?:\/\//i.test(value)) {
+      setData((prev) => ({ ...prev, [name]: `https://${value}` }));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // --- STATS MANAGEMENT ---
+  const handleAddStat = () => {
+    setData((prev) => ({
+      ...prev,
+      stats: [...(prev.stats || []), { label: "", value: "" }],
+    }));
+  };
+
+  const handleStatChange = (index: number, field: "label" | "value", value: string) => {
+    const newStats = [...(data.stats || [])];
+    newStats[index] = { ...newStats[index], [field]: value };
+    setData((prev) => ({ ...prev, stats: newStats }));
+  };
+
+  const handleRemoveStat = (index: number) => {
+    const newStats = [...(data.stats || [])];
+    newStats.splice(index, 1);
+    setData((prev) => ({ ...prev, stats: newStats }));
+  };
+
+  // --- IMAGES MANAGEMENT ---
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    toast.loading("Uploading image...", { id: "upload" });
+
+    const url = await uploadImage(file, "profile");
+    if (url) {
+      setData((prev) => ({
+        ...prev,
+        profile_images: [...(prev.profile_images || []), { src: url, position: "center", zoom: 1 }],
+      }));
+      toast.success("Image uploaded! Don't forget to save.", { id: "upload" });
+    } else {
+      toast.error("Failed to upload image", { id: "upload" });
+    }
+    setUploadingImage(false);
+    e.target.value = "";
+  };
+
+  const handleImageRemove = async (urlToRemove: string) => {
+    if (!confirm("Are you sure you want to remove this image?")) return;
+    
+    // We only remove it from the state. The actual storage deletion happens 
+    // either here or we can just leave it to not overcomplicate for now. 
+    // Let's delete it from storage too for cleanliness.
+    await deleteImage(urlToRemove);
+    
+    setData((prev) => ({
+      ...prev,
+      profile_images: (prev.profile_images || []).filter(img => img.src !== urlToRemove),
+    }));
+    toast.success("Image removed");
+  };
+
+  const handleImageUpdate = (index: number, field: "position" | "zoom", value: string | number) => {
+    const newImages = [...(data.profile_images || [])];
+    newImages[index] = { ...newImages[index], [field]: value };
+    setData((prev) => ({ ...prev, profile_images: newImages }));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const loadingToast = toast.loading("Saving personal info...");
 
     try {
-      // Upsert: update if exists, insert if not
-      // We assume there's only one row for personal info
-      const payload = { ...formData };
-      if (payload.id === 0) {
-        // @ts-expect-error: Deleting ID to allow auto-increment on insert
-        delete payload.id;
+      if (data.id) {
+        const { error } = await supabase.from("personal").update(data).eq("id", data.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("personal").insert(data);
+        if (error) throw error;
       }
-
-      const { error } = await supabase
-        .from("personal")
-        .upsert(payload);
-
-      if (error) throw error;
-      
-      toast.dismiss(loadingToast);
-      toast.success("Personal info saved successfully!");
-      fetchData(); // Refresh to get ID if it was new
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Error saving: " + (error as Error).message);
+      toast.success("Personal data saved successfully!");
+      fetchPersonal();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save data");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="w-8 h-8 border-4 border-zinc-800 border-t-violet-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8 gradient-text">Personal Info</h1>
+    <div className="max-w-4xl animate-[fadeIn_0.5s_ease] pb-20">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Personal Data</h1>
+        <p className="text-zinc-400">Manage your basic profile information, photos, and stats displayed across the website.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 glass-card p-8">
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <label className="block text-sm text-zinc-400 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={formData.name || ""}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-zinc-400 mb-1">Role / Title</label>
-            <input
-              type="text"
-              value={formData.role || ""}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-zinc-400 mb-1">Bio</label>
-            <textarea
-              rows={4}
-              value={formData.bio || ""}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSave} className="space-y-6">
+        
+        {/* --- Profile Images Section --- */}
+        <div className="glass-card p-6 md:p-8 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">Location</label>
+              <h2 className="text-lg font-bold text-white">Profile Images</h2>
+              <p className="text-sm text-zinc-400">These images will rotate in the About section.</p>
+            </div>
+            <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+              {uploadingImage ? "Uploading..." : <><Plus size={16} /> Add Image</>}
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
+            </label>
+          </div>
+          
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {(data.profile_images || []).length === 0 ? (
+              <div className="w-full py-8 text-center text-zinc-500 text-sm border border-dashed border-white/10 rounded-xl">
+                No profile images uploaded yet.
+              </div>
+            ) : (
+              (data.profile_images || []).map((img, i) => (
+                <DraggableProfileImage
+                  key={i}
+                  img={img}
+                  index={i}
+                  onUpdate={handleImageUpdate}
+                  onRemove={handleImageRemove}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* --- Stats Section --- */}
+        <div className="glass-card p-6 md:p-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">Profile Stats</h2>
+              <p className="text-sm text-zinc-400">Short highlights like "10+ Projects".</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddStat}
+              className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors flex items-center gap-2"
+            >
+              <Plus size={16} /> Add Stat
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {(data.stats || []).length === 0 ? (
+              <div className="w-full py-6 text-center text-zinc-500 text-sm border border-dashed border-white/10 rounded-xl">
+                No stats added yet.
+              </div>
+            ) : (
+              (data.stats || []).map((stat, i) => (
+                <div key={i} className="flex gap-3 items-center">
+                  <input
+                    type="text"
+                    value={stat.value}
+                    onChange={(e) => handleStatChange(i, "value", e.target.value)}
+                    placeholder="Value (e.g. 10+)"
+                    className="w-1/3 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-violet-500/50"
+                  />
+                  <input
+                    type="text"
+                    value={stat.label}
+                    onChange={(e) => handleStatChange(i, "label", e.target.value)}
+                    placeholder="Label (e.g. Projects)"
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-violet-500/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStat(i)}
+                    className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* --- Basic Info Section --- */}
+        <div className="glass-card p-6 md:p-8 space-y-6">
+          <h2 className="text-lg font-bold text-white mb-4">Basic Information</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Full Name</label>
               <input
+                name="name"
                 type="text"
-                value={formData.location || ""}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
+                required
+                value={data.name || ""}
+                onChange={handleChange}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+                placeholder="e.g. Martua Kevin"
               />
             </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1">Email</label>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Role / Title</label>
               <input
-                type="email"
-                value={formData.email || ""}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
+                name="role"
+                type="text"
+                required
+                value={data.role || ""}
+                onChange={handleChange}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+                placeholder="e.g. Full Stack Developer"
               />
             </div>
           </div>
 
-          <div className="border-t border-zinc-800 pt-6">
-            <h3 className="text-lg font-bold mb-4">Social Links</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">GitHub URL</label>
-                <input
-                  type="url"
-                  value={formData.github_url || ""}
-                  onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">LinkedIn URL</label>
-                <input
-                  type="url"
-                  value={formData.linkedin_url || ""}
-                  onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Instagram URL</label>
-                <input
-                  type="url"
-                  value={formData.instagram_url || ""}
-                  onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
-                />
-              </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Bio</label>
+            <textarea
+              name="bio"
+              rows={4}
+              required
+              value={data.bio || ""}
+              onChange={handleChange}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 resize-y"
+              placeholder="Tell something about yourself..."
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Location</label>
+              <input
+                name="location"
+                type="text"
+                value={data.location || ""}
+                onChange={handleChange}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+                placeholder="e.g. Bandar Lampung, Indonesia"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Email Address</label>
+              <input
+                name="email"
+                type="email"
+                value={data.email || ""}
+                onChange={handleChange}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+                placeholder="e.g. you@example.com"
+              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm text-zinc-400 mb-1">Resume / CV URL</label>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">GitHub URL</label>
+              <input
+                name="github_url"
+                type="url"
+                value={data.github_url || ""}
+                onChange={handleChange}
+                onBlur={handleUrlBlur}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 text-sm"
+                placeholder="https://github.com/..."
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">LinkedIn URL</label>
+              <input
+                name="linkedin_url"
+                type="url"
+                value={data.linkedin_url || ""}
+                onChange={handleChange}
+                onBlur={handleUrlBlur}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 text-sm"
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Instagram URL</label>
+              <input
+                name="instagram_url"
+                type="url"
+                value={data.instagram_url || ""}
+                onChange={handleChange}
+                onBlur={handleUrlBlur}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50 text-sm"
+                placeholder="https://instagram.com/..."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Resume URL (Optional)</label>
             <input
-              type="text"
-              value={formData.resume_url || ""}
-              onChange={(e) => setFormData({ ...formData, resume_url: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 focus:outline-none focus:border-violet-500"
+              name="resume_url"
+              type="url"
+              value={data.resume_url || ""}
+              onChange={handleChange}
+              onBlur={handleUrlBlur}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+              placeholder="Link to your CV/Resume (Google Drive, etc)"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full btn-primary py-3 flex items-center justify-center font-bold"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+        <div className="flex justify-end pt-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-linear-to-r from-violet-600 to-fuchsia-600 text-white font-semibold py-3 px-8 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50 flex items-center gap-2 shadow-[0_4px_20px_rgba(139,92,246,0.4)]"
+          >
+            {saving ? (
+              <>
+                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save All Changes"
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
