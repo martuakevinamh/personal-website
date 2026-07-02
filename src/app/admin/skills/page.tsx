@@ -22,10 +22,6 @@ export default function AdminSkills() {
   const [newSkill, setNewSkill] = useState({ name: "", category: CATEGORIES[0] });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchSkills();
-  }, []);
-
   async function fetchSkills() {
     const { data, error } = await supabase
       .from("skills")
@@ -38,6 +34,12 @@ export default function AdminSkills() {
     
     setLoading(false);
   }
+
+  useEffect(() => {
+    (async () => {
+      await fetchSkills();
+    })();
+  }, []);
 
   async function handleAddSkill(e: React.FormEvent) {
     e.preventDefault();
@@ -67,16 +69,35 @@ export default function AdminSkills() {
     setSaving(false);
   }
 
-  async function handleDeleteSkill(id: number) {
-    if (!confirm("Are you sure you want to delete this skill?")) return;
-    
-    const { error } = await supabase.from("skills").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Skill deleted");
-      setSkills(skills.filter((s) => s.id !== id));
-    }
+  function handleDeleteSkill(id: number) {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-white">Delete this skill?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-4 py-1.5 text-xs bg-zinc-800 rounded-lg hover:bg-zinc-700 text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const { error } = await supabase.from("skills").delete().eq("id", id);
+              if (error) {
+                toast.error(error.message);
+              } else {
+                toast.success("Skill deleted");
+                setSkills(skills.filter((s) => s.id !== id));
+              }
+            }} 
+            className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
   }
 
   if (loading) {

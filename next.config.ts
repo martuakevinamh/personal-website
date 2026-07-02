@@ -17,8 +17,7 @@ const nextConfig: NextConfig = {
         hostname: "ixdaxtzxavxhesqhkuyi.supabase.co",
       },
     ],
-    // Disable image optimization for unoptimized images (fixes local 500 errors)
-    unoptimized: true,
+    formats: ["image/avif", "image/webp"],
   },
 };
 

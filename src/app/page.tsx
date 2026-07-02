@@ -16,7 +16,8 @@ import { getEducation } from "@/lib/queries/education";
 
 // Removed static fallbacks, strictly using DB data
 
-export const dynamic = "force-dynamic";
+// Use Incremental Static Regeneration (ISR)
+export const revalidate = 3600;
 
 export default async function Home() {
 

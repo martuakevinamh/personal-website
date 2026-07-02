@@ -14,6 +14,7 @@ type PersonalInfo = {
   resume_url?: string | null;
   github_url?: string | null;
   linkedin_url?: string | null;
+  status?: string | null;
   profile_images?: { src: string; position?: string; zoom?: number }[] | null;
   stats?: { label: string; value: string }[] | null;
 };
@@ -165,7 +166,9 @@ export default function About({ personalInfo }: { personalInfo: PersonalInfo | n
                 <div className="text-amber-400 p-2 bg-amber-500/10 rounded-lg"><Briefcase size={20} /></div>
                 <div>
                   <div className="text-xs text-zinc-500 mb-0.5">Status</div>
-                  <div className="text-sm font-semibold text-green-400">Open to work</div>
+                  <div className={`text-sm font-semibold ${personalInfo.status?.toLowerCase().includes('open') ? 'text-green-400' : 'text-violet-400'}`}>
+                    {personalInfo.status || "Open to work"}
+                  </div>
                 </div>
               </div>
             </div>

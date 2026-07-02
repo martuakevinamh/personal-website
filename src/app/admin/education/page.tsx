@@ -32,16 +32,18 @@ export default function AdminEducation() {
     sort_order: 0,
   });
 
-  useEffect(() => {
-    fetchEducation();
-  }, []);
-
   async function fetchEducation() {
     const { data, error } = await supabase.from("education").select("*").order("sort_order", { ascending: true });
     if (error) toast.error("Failed to fetch education data");
     else setItems(data || []);
     setLoading(false);
   }
+
+  useEffect(() => {
+    (async () => {
+      await fetchEducation();
+    })();
+  }, []);
 
   const handleNew = () => {
     setEditingId(null);
@@ -63,14 +65,34 @@ export default function AdminEducation() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this education entry?")) return;
-    const { error } = await supabase.from("education").delete().eq("id", id);
-    if (error) toast.error("Failed to delete entry");
-    else {
-      toast.success("Entry deleted");
-      fetchEducation();
-    }
+  const handleDelete = (id: number) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-white">Delete this education entry?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-4 py-1.5 text-xs bg-zinc-800 rounded-lg hover:bg-zinc-700 text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const { error } = await supabase.from("education").delete().eq("id", id);
+              if (error) toast.error("Failed to delete entry");
+              else {
+                toast.success("Entry deleted");
+                fetchEducation();
+              }
+            }} 
+            className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,8 +109,8 @@ export default function AdminEducation() {
       }
       setIsModalOpen(false);
       fetchEducation();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save entry");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save entry");
     }
   };
 

@@ -1,4 +1,4 @@
-import { skillIcons, categoryIcons } from "@/components/ui/SkillIcons";
+import { categoryIcons } from "@/components/ui/SkillIcons";
 
 type Skill = { name: string };
 type SkillCategory = { id: string; title: string; skills: Skill[] };
@@ -60,10 +60,7 @@ export default function Skills({ skills }: { skills: SkillCategory[] }) {
                       className="skill-pill fade-in"
                       style={{ animationDelay: `${ci * 0.12 + si * 0.04}s` }}
                     >
-                      <span className="text-base leading-none">
-                        {skillIcons[skill.name] || "🔹"}
-                      </span>
-                      <span className="text-zinc-200 text-sm">{skill.name}</span>
+                      <span className="text-zinc-200 text-sm font-medium">{skill.name}</span>
                     </div>
                   ))}
                 </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Briefcase, ClipboardList, Inbox } from "lucide-react";
+import { Briefcase, ClipboardList, Inbox, ExternalLink } from "lucide-react";
+import ExperienceDetailModal from "./ExperienceDetailModal";
 
 type ExperienceImage = { src: string; position?: string; zoom?: number };
 type Experience = {
@@ -69,13 +70,17 @@ function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: strin
   );
 }
 
-function ExpCard({ exp, color, index }: { exp: Experience; color: string; index: number }) {
-  const isPresent = !exp.endDate || exp.endDate === "Sekarang";
+function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: string; index: number; onClick: () => void }) {
+  const isPresent = !exp.endDate || exp.endDate === "Sekarang" || exp.endDate.toLowerCase() === "present";
   return (
-    <div className="glass-card p-5 fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+    <div 
+      className="glass-card p-5 fade-in group cursor-pointer hover:border-violet-500/30 transition-all hover:-translate-y-1" 
+      style={{ animationDelay: `${index * 0.1}s` }}
+      onClick={onClick}
+    >
       <ImageSlideshow images={exp.images} alt={exp.organization} />
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h4 className={`font-bold text-sm leading-tight ${color}`}>{exp.title}</h4>
+        <h4 className={`font-bold text-sm leading-tight ${color} group-hover:text-white transition-colors`}>{exp.title}</h4>
         <span
           className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
             isPresent
@@ -88,14 +93,19 @@ function ExpCard({ exp, color, index }: { exp: Experience; color: string; index:
       </div>
       <p className="text-sm text-zinc-300 mb-2 font-medium">{exp.organization}</p>
       {exp.description && (
-        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3">{exp.description}</p>
+        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3 mb-3">{exp.description}</p>
       )}
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        View Details <ExternalLink size={12} />
+      </div>
     </div>
   );
 }
 
 export default function Experience({ experiences }: { experiences: Experience[] }) {
   const [tab, setTab] = useState<"organization" | "committee">("organization");
+  const [selectedExp, setSelectedExp] = useState<Experience | null>(null);
+
   if (!experiences) return null;
 
   const orgs = experiences.filter((e) => e.type === "organization");
@@ -115,8 +125,8 @@ export default function Experience({ experiences }: { experiences: Experience[] 
         <div className="flex justify-center mb-10">
           <div className="glass rounded-full p-1 flex gap-1">
             {([
-              { key: "organization", label: <span className="flex items-center gap-1.5"><Briefcase size={14} /> Organisasi</span>, count: orgs.length },
-              { key: "committee",    label: <span className="flex items-center gap-1.5"><ClipboardList size={14} /> Kepanitiaan</span>, count: coms.length },
+              { key: "organization", label: <span className="flex items-center gap-1.5"><Briefcase size={14} /> Organization</span>, count: orgs.length },
+              { key: "committee",    label: <span className="flex items-center gap-1.5"><ClipboardList size={14} /> Committee</span>, count: coms.length },
             ] as const).map(({ key, label, count }) => (
               <button
                 key={key}
@@ -142,6 +152,7 @@ export default function Experience({ experiences }: { experiences: Experience[] 
                 exp={exp}
                 index={i}
                 color={tab === "organization" ? "text-violet-400" : "text-fuchsia-400"}
+                onClick={() => setSelectedExp(exp)}
               />
             ))}
           </div>
@@ -152,6 +163,13 @@ export default function Experience({ experiences }: { experiences: Experience[] 
           </div>
         )}
       </div>
+
+      {selectedExp && (
+        <ExperienceDetailModal
+          exp={selectedExp}
+          onClose={() => setSelectedExp(null)}
+        />
+      )}
     </section>
   );
 }

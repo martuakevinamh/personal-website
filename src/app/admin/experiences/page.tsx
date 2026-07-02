@@ -28,16 +28,18 @@ export default function AdminExperiences() {
   const [isCurrent, setIsCurrent] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   async function loadData() {
     setLoading(true);
     const data = await getExperiences();
     setExperiences(data);
     setLoading(false);
   }
+
+  useEffect(() => {
+    (async () => {
+      await loadData();
+    })();
+  }, []);
 
   function handleEdit(exp: ExperienceWithImages) {
     setFormData({
@@ -96,15 +98,35 @@ export default function AdminExperiences() {
     }
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm("Are you sure you want to delete this experience? All its images will be deleted too.")) return;
-    const ok = await deleteExperience(id);
-    if (ok) {
-      toast.success("Experience deleted");
-      loadData();
-    } else {
-      toast.error("Failed to delete experience");
-    }
+  function handleDelete(id: number) {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-white">Delete this experience and all its images?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-4 py-1.5 text-xs bg-zinc-800 rounded-lg hover:bg-zinc-700 text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const ok = await deleteExperience(id);
+              if (ok) {
+                toast.success("Experience deleted");
+                loadData();
+              } else {
+                toast.error("Failed to delete experience");
+              }
+            }} 
+            className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, expId: number) {
@@ -131,12 +153,32 @@ export default function AdminExperiences() {
     e.target.value = "";
   }
 
-  async function handleImageDelete(imgId: number, url: string) {
-    if (!confirm("Delete this image?")) return;
-    await deleteExperienceImage(imgId);
-    await deleteImage(url);
-    toast.success("Image deleted");
-    loadData();
+  function handleImageDelete(imgId: number, url: string) {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-white">Delete this image?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-4 py-1.5 text-xs bg-zinc-800 rounded-lg hover:bg-zinc-700 text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              await deleteExperienceImage(imgId);
+              await deleteImage(url);
+              toast.success("Image deleted");
+              loadData();
+            }} 
+            className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
   }
 
   if (loading && experiences.length === 0) {

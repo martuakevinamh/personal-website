@@ -19,6 +19,7 @@ type PersonalData = {
   linkedin_url: string;
   instagram_url: string;
   resume_url: string;
+  status: string;
   profile_images: { src: string; position?: string; zoom?: number }[];
   stats: { label: string; value: string }[];
 };
@@ -136,10 +137,6 @@ export default function AdminPersonal() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  useEffect(() => {
-    fetchPersonal();
-  }, []);
-
   async function fetchPersonal() {
     const { data: res, error } = await supabase.from("personal").select("*").maybeSingle();
     if (error) {
@@ -153,6 +150,12 @@ export default function AdminPersonal() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    (async () => {
+      await fetchPersonal();
+    })();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -207,19 +210,40 @@ export default function AdminPersonal() {
     e.target.value = "";
   };
 
-  const handleImageRemove = async (urlToRemove: string) => {
-    if (!confirm("Are you sure you want to remove this image?")) return;
-    
-    // We only remove it from the state. The actual storage deletion happens 
-    // either here or we can just leave it to not overcomplicate for now. 
-    // Let's delete it from storage too for cleanliness.
-    await deleteImage(urlToRemove);
-    
-    setData((prev) => ({
-      ...prev,
-      profile_images: (prev.profile_images || []).filter(img => img.src !== urlToRemove),
-    }));
-    toast.success("Image removed");
+  const handleImageRemove = (urlToRemove: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-white">Are you sure you want to remove this image?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            type="button"
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-4 py-1.5 text-xs bg-zinc-800 rounded-lg hover:bg-zinc-700 text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={async () => {
+              toast.dismiss(t.id);
+              await deleteImage(urlToRemove);
+              setData((prev) => ({
+                ...prev,
+                profile_images: (prev.profile_images || []).filter(img => img.src !== urlToRemove),
+              }));
+              toast.success("Image removed");
+            }} 
+            className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    ), { 
+      duration: Infinity, 
+      id: "confirm-delete",
+      style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } 
+    });
   };
 
   const handleImageUpdate = (index: number, field: "position" | "zoom", value: string | number) => {
@@ -303,7 +327,7 @@ export default function AdminPersonal() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Profile Stats</h2>
-              <p className="text-sm text-zinc-400">Short highlights like "10+ Projects".</p>
+              <p className="text-sm text-zinc-400">Short highlights like &quot;10+ Projects&quot;.</p>
             </div>
             <button
               type="button"
@@ -377,6 +401,19 @@ export default function AdminPersonal() {
                 placeholder="e.g. Full Stack Developer"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Current Status</label>
+            <input
+              name="status"
+              type="text"
+              required
+              value={data.status || ""}
+              onChange={handleChange}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-violet-500/50"
+              placeholder="e.g. Open to work"
+            />
           </div>
 
           <div className="space-y-1">

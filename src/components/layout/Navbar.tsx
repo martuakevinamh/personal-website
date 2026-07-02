@@ -53,6 +53,21 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    setIsMobileOpen(false);
+    
+    if (href === "#home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const target = document.getElementById(href.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+    window.history.pushState(null, "", href);
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -63,23 +78,24 @@ export default function Navbar() {
     >
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
-        <Link
+        <a
           href="#home"
-          className="text-xl font-bold gradient-text tracking-tight"
-          onClick={() => setIsMobileOpen(false)}
+          className="text-xl font-bold gradient-text tracking-tight cursor-pointer"
+          onClick={(e) => handleNavClick(e, "#home")}
         >
           &lt;Martua /&gt;
-        </Link>
+        </a>
 
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => {
             const isActive = activeSection === link.href.slice(1);
             return (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
-                className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                onClick={(e) => handleNavClick(e, link.href)}
+                className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
                   isActive
                     ? "text-white"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
@@ -89,7 +105,7 @@ export default function Navbar() {
                 {isActive && (
                   <span className="absolute inset-x-0 bottom-0 h-0.5 bg-linear-to-r from-violet-500 to-fuchsia-500 rounded-full" />
                 )}
-              </Link>
+              </a>
             );
           })}
         </div>
@@ -130,18 +146,18 @@ export default function Navbar() {
           {navLinks.map((link) => {
             const isActive = activeSection === link.href.slice(1);
             return (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
-                onClick={() => setIsMobileOpen(false)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                onClick={(e) => handleNavClick(e, link.href)}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
                   isActive
                     ? "text-white bg-violet-500/15 border border-violet-500/20"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {link.name}
-              </Link>
+              </a>
             );
           })}
         </div>
