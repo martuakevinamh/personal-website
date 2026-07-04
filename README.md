@@ -1,6 +1,6 @@
 # Personal Website
 
-Website portfolio personal yang modern dan dinamis, dibangun dengan **Next.js 15**, **Tailwind CSS v4**, dan **Supabase** sebagai backend.
+Website portfolio personal yang modern dan dinamis, dibangun dengan **Next.js 16**, **Tailwind CSS v4**, dan **Supabase** sebagai backend.
 
 ## 🚀 Demo
 
@@ -28,9 +28,18 @@ Website portfolio personal yang modern dan dinamis, dibangun dengan **Next.js 15
 - **Manage Personal Info**: Update profil, bio, dan link sosial media secara realtime.
 - **Image Management**: Upload dan manajemen posisi (focal point) gambar.
 
+## 🛡️ Fitur Keamanan (Security)
+
+Website ini dirancang dengan postur keamanan tingkat tinggi (Target: Grade A/A+ di Mozilla Observatory):
+- **Content Security Policy (CSP) Ketat**: Mencegah serangan *Cross-Site Scripting* (XSS).
+- **Security Headers Lengkap**: Termasuk HSTS, `X-Frame-Options` (Anti-Clickjacking), dan `X-Content-Type-Options`.
+- **API Rate Limiting & DNS MX Validation**: Memblokir spammer dan bot pada form kontak.
+- **Supabase Row Level Security (RLS)**: Mencegah akses manipulasi data tanpa token autentikasi admin yang valid.
+- **Zero Known Vulnerabilities**: Bebas dari kerentanan framework (CVE) kritis.
+
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4, Lucide React (Icons)
 - **Backend**: Supabase (PostgreSQL Database & Storage)

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Basic IP-based rate limiting (5 requests per minute per IP)
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const { allowed, remaining, resetIn } = rateLimit(ip, 5, 60 * 1000);
+    const { allowed, resetIn } = rateLimit(ip, 5, 60 * 1000);
 
     if (!allowed) {
       return successResponse({
