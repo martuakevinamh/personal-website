@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
 
     if (!file) return errorResponse('Missing field: file');
 
-    // Validasi tipe file — hanya gambar
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    // Validasi tipe file — hanya gambar raster (SVG dilarang karena bisa mengandung JS/XSS)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return errorResponse('Invalid file type. Only images are allowed.');
+      return errorResponse('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
     }
 
     // Validasi ukuran — max 5MB

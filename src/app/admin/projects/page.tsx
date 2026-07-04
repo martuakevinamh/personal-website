@@ -6,7 +6,111 @@ import { uploadImage, deleteImage } from "@/lib/storage";
 import { ProjectWithImages, ProjectPayload } from "@/lib/types";
 import toast from "react-hot-toast";
 import Image from "next/image";
-import { Plus, FolderGit2, Edit2, Trash2, Star } from "lucide-react";
+import { Plus, FolderGit2, Edit2, Trash2, Star, Move } from "lucide-react";
+import React, { useRef } from "react";
+import { ProjectImage } from "@/lib/types";
+
+function DraggableProjectImage({
+  img,
+  onSave,
+  onRemove
+}: {
+  img: ProjectImage;
+  onSave: (id: number, field: "position" | "zoom", value: string | number) => void;
+  onRemove: (id: number, src: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [localPos, setLocalPos] = useState(img.position || "50% 50%");
+  const [localZoom, setLocalZoom] = useState(img.zoom || 1);
+  
+  const [posX, posY] = localPos.split(" ").map(p => parseFloat(p) || 50);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialPosX = posX;
+    const initialPosY = posY;
+    
+    let currentNewPos = localPos;
+
+    const handlePointerMove = (ev: PointerEvent) => {
+      const deltaX = ev.clientX - startX;
+      const deltaY = ev.clientY - startY;
+      const sensitivity = 0.2 / localZoom;
+      
+      let newX = initialPosX - (deltaX * sensitivity);
+      let newY = initialPosY - (deltaY * sensitivity);
+      
+      newX = Math.max(0, Math.min(100, newX));
+      newY = Math.max(0, Math.min(100, newY));
+      
+      currentNewPos = `${newX.toFixed(2)}% ${newY.toFixed(2)}%`;
+      setLocalPos(currentNewPos);
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      onSave(img.id, "position", currentNewPos);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 shrink-0 border border-white/10 rounded-xl p-2 bg-black/20 w-48">
+      <div 
+        ref={containerRef}
+        className="relative w-full aspect-video rounded-lg overflow-hidden group cursor-move touch-none"
+        onPointerDown={handlePointerDown}
+      >
+        <Image 
+          src={img.src} 
+          alt="" 
+          fill 
+          className="object-cover pointer-events-none" 
+          style={{
+            objectPosition: localPos,
+            transform: `scale(${localZoom})`
+          }}
+        />
+        
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-1 text-white text-[10px] font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
+            <Move size={10} /> Drag
+          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRemove(img.id, img.src); }}
+            className="bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-md hover:bg-red-600 transition-colors pointer-events-auto"
+          >
+            Del
+          </button>
+        </div>
+      </div>
+      
+      {/* Zoom Control */}
+      <div className="space-y-1 mt-1 text-[10px]">
+        <label className="text-zinc-400 font-semibold uppercase tracking-wide flex justify-between">
+          Zoom <span>{localZoom}x</span>
+        </label>
+        <input 
+          type="range" 
+          min="1" 
+          max="3" 
+          step="0.05" 
+          value={localZoom}
+          onChange={(e) => setLocalZoom(parseFloat(e.target.value))}
+          onMouseUp={(e) => onSave(img.id, "zoom", parseFloat((e.target as HTMLInputElement).value))}
+          onTouchEnd={(e) => onSave(img.id, "zoom", parseFloat((e.target as HTMLInputElement).value))}
+          className="w-full accent-violet-500"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function AdminProjects() {
   const [projects, setProjects] = useState<ProjectWithImages[]>([]);
@@ -207,6 +311,25 @@ export default function AdminProjects() {
     ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
   }
 
+  // Save image position or zoom changes to database
+  async function handleImageSave(imgId: number, field: "position" | "zoom", value: string | number) {
+    try {
+      const { updateProjectImage } = await import("@/lib/queries/projects");
+      await updateProjectImage(imgId, { [field]: value });
+      toast.success("Image updated", { id: "img-update", duration: 1500 });
+      // Update local state to avoid full reload just for a style tweak
+      setProjects(prev => prev.map(proj => ({
+        ...proj,
+        project_images: (proj.project_images || []).map(img => 
+          img.id === imgId ? { ...img, [field]: value } : img
+        )
+      })));
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update image", { id: "img-update" });
+    }
+  }
+
   if (loading && projects.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -285,15 +408,12 @@ export default function AdminProjects() {
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {proj.project_images?.map(img => (
-                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/10 group/img">
-                      <Image src={img.src} alt="" fill className="object-cover" />
-                      <button
-                        onClick={() => handleImageDelete(img.id, img.src)}
-                        className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-white text-[10px] font-bold"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <DraggableProjectImage
+                      key={img.id}
+                      img={img}
+                      onSave={handleImageSave}
+                      onRemove={handleImageDelete}
+                    />
                   ))}
                 </div>
               </div>

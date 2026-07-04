@@ -60,6 +60,7 @@ function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: strin
               <button
                 key={i}
                 onClick={() => setIdx(i)}
+                aria-label={`Go to image ${i + 1}`}
                 className={`rounded-full transition-all ${i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
               />
             ))}
@@ -80,12 +81,12 @@ function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: strin
     >
       <ImageSlideshow images={exp.images} alt={exp.organization} />
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h4 className={`font-bold text-sm leading-tight ${color} group-hover:text-white transition-colors`}>{exp.title}</h4>
+        <h3 className={`font-bold text-sm leading-tight ${color} group-hover:text-white transition-colors`}>{exp.title}</h3>
         <span
           className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
             isPresent
               ? "bg-green-500/10 border-green-500/20 text-green-400"
-              : "bg-zinc-800 border-zinc-700 text-zinc-500"
+              : "bg-zinc-800 border-zinc-700 text-zinc-300"
           }`}
         >
           {exp.startDate} – {isPresent ? "Now" : exp.endDate}

@@ -54,6 +54,7 @@ export interface ExperienceImage {
   experience_id: number;
   src: string;
   position: string;
+  zoom: number;
   sort_order: number;
   created_at: string;
 }

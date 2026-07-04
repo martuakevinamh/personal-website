@@ -1,16 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { LayoutDashboard, User, Briefcase, FolderGit2, Zap, GraduationCap } from "lucide-react";
+import toast from "react-hot-toast";
+
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const WARN_BEFORE_MS  =  1 * 60 * 1000; //  1 minute warning before logout
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warnTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warnToastId = useRef<string | null>(null);
+
+  const signOutIdle = useCallback(async () => {
+    if (warnToastId.current) toast.dismiss(warnToastId.current);
+    await supabase.auth.signOut();
+    toast.error("You were signed out due to inactivity.", { duration: 5000 });
+    router.replace("/admin/login");
+  }, [router]);
+
+  const resetIdleTimer = useCallback(() => {
+    // Clear existing timers
+    if (idleTimer.current)  clearTimeout(idleTimer.current);
+    if (warnTimer.current)  clearTimeout(warnTimer.current);
+    if (warnToastId.current) { toast.dismiss(warnToastId.current); warnToastId.current = null; }
+
+    // Set warning 1 min before logout
+    warnTimer.current = setTimeout(() => {
+      warnToastId.current = toast("⚠️ You'll be signed out in 1 minute due to inactivity.", {
+        duration: WARN_BEFORE_MS,
+        icon: "⏰",
+      });
+    }, IDLE_TIMEOUT_MS - WARN_BEFORE_MS);
+
+    // Set actual logout timer
+    idleTimer.current = setTimeout(signOutIdle, IDLE_TIMEOUT_MS);
+  }, [signOutIdle]);
+
+  // Track any user activity on the page
+  useEffect(() => {
+    if (pathname === "/admin/login" || !session) return;
+
+    const events = ["mousemove", "keydown", "mousedown", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer(); // Start timer on mount
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetIdleTimer));
+      if (idleTimer.current)  clearTimeout(idleTimer.current);
+      if (warnTimer.current)  clearTimeout(warnTimer.current);
+    };
+  }, [pathname, session, resetIdleTimer]);
 
   useEffect(() => {
     let mounted = true;

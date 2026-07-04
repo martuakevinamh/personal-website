@@ -16,8 +16,8 @@ import { getEducation } from "@/lib/queries/education";
 
 // Removed static fallbacks, strictly using DB data
 
-// Use Incremental Static Regeneration (ISR)
-export const revalidate = 3600;
+// Use Incremental Static Regeneration (ISR) - revalidates every 60 seconds
+export const revalidate = 60;
 
 export default async function Home() {
 

@@ -219,7 +219,7 @@ export default function Hero({ personalInfo }: { personalInfo: PersonalInfo | nu
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 fade-in stagger-6">
-          <span className="text-zinc-600 text-xs tracking-widest uppercase">Scroll</span>
+          <span className="text-zinc-400 text-xs tracking-widest uppercase">Scroll</span>
           <div className="w-5 h-8 rounded-full border border-zinc-700 flex items-start justify-center p-1">
             <div className="w-1 h-2 bg-violet-500 rounded-full animate-bounce" />
           </div>

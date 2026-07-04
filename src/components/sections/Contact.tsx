@@ -31,18 +31,62 @@ export default function Contact({ personalInfo }: { personalInfo?: PersonalInfo 
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ID
     ? `https://formspree.io/f/${process.env.NEXT_PUBLIC_FORMSPREE_ID}`
     : "https://formspree.io/f/mlgggvap";
 
+  // Basic regex — catches obvious invalid formats before hitting any API
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const validateEmail = async (email: string): Promise<string | null> => {
+    if (!EMAIL_REGEX.test(email)) return "Please enter a valid email address.";
+
+    // Check that the domain has real MX records (no fake domains like test@abc.xyz)
+    try {
+      const res = await fetch(
+        `https://emailvalidation.abstractapi.com/v1/?api_key=${process.env.NEXT_PUBLIC_ABSTRACT_EMAIL_KEY}&email=${encodeURIComponent(email)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // deliverability: "DELIVERABLE" | "UNDELIVERABLE" | "RISKY" | "UNKNOWN"
+        if (data.deliverability === "UNDELIVERABLE") {
+          return "This email address doesn't appear to exist. Please use a real email.";
+        }
+      }
+    } catch {
+      // If API is unavailable, let it through — don't block legitimate users
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError(null);
+
+    // Trim & enforce max lengths to prevent oversized payloads
+    const name = form.name.trim().slice(0, 100);
+    const email = form.email.trim().slice(0, 254);
+    const message = form.message.trim().slice(0, 2000);
+
+    if (!name || !email || !message) return;
+
     setStatus("sending");
+
+    // Validate email before sending
+    const emailErr = await validateEmail(email);
+    if (emailErr) {
+      setEmailError(emailErr);
+      setStatus("idle");
+      return;
+    }
+
     try {
       const res = await fetch(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ name, email, message }),
       });
       setStatus(res.ok ? "sent" : "error");
       if (res.ok) {
@@ -165,10 +209,13 @@ export default function Contact({ personalInfo }: { personalInfo?: PersonalInfo 
                     type="email"
                     required
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="input-field"
+                    onChange={(e) => { setForm({ ...form, email: e.target.value }); setEmailError(null); }}
+                    className={`input-field ${emailError ? "border-red-500/60 focus:ring-red-500/30" : ""}`}
                     placeholder="your@email.com"
                   />
+                  {emailError && (
+                    <p className="text-xs text-red-400 mt-1">{emailError}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
