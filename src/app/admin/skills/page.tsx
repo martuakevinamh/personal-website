@@ -3,7 +3,24 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
-import { Plus } from "lucide-react";
+import { Plus, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Skill = {
   id: number;
@@ -14,6 +31,37 @@ type Skill = {
 
 const CATEGORIES = ["Frontend", "Backend & AI", "Tools & Others"];
 
+function SortableSkillItem({ skill, onDelete }: { skill: Skill; onDelete: (id: number) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: skill.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group relative bg-black/40 border border-white/10 hover:border-violet-500/40 text-sm text-zinc-300 pl-1 pr-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+    >
+      <div {...attributes} {...listeners} className="cursor-grab hover:text-white p-1 text-zinc-500 active:cursor-grabbing">
+        <GripVertical size={14} />
+      </div>
+      <span className="whitespace-nowrap">{skill.name}</span>
+      <button
+        onClick={() => onDelete(skill.id)}
+        className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all ml-1"
+        title="Delete skill"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+  );
+}
+
 export default function AdminSkills() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +69,11 @@ export default function AdminSkills() {
   const [isAdding, setIsAdding] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: "", category: CATEGORIES[0] });
   const [saving, setSaving] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   async function fetchSkills() {
     const { data, error } = await supabase
@@ -46,7 +99,6 @@ export default function AdminSkills() {
     if (!newSkill.name.trim()) return;
     
     setSaving(true);
-    // get max sort_order for category
     const categorySkills = skills.filter((s) => s.category === newSkill.category);
     const maxSort = categorySkills.length > 0 ? Math.max(...categorySkills.map((s) => s.sort_order)) : 0;
 
@@ -62,7 +114,7 @@ export default function AdminSkills() {
       toast.error(error.message);
     } else {
       toast.success("Skill added!");
-      setNewSkill({ name: "", category: newSkill.category }); // Keep same category selected
+      setNewSkill({ name: "", category: newSkill.category });
       setIsAdding(false);
       fetchSkills();
     }
@@ -98,6 +150,50 @@ export default function AdminSkills() {
         </div>
       </div>
     ), { duration: Infinity, style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' } });
+  }
+
+  async function handleDragEnd(event: DragEndEvent, category: string) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const categorySkills = skills.filter(s => s.category === category);
+    const oldIndex = categorySkills.findIndex((s) => s.id === active.id);
+    const newIndex = categorySkills.findIndex((s) => s.id === over.id);
+
+    // Create the new array for this category
+    const reorderedCategorySkills = arrayMove(categorySkills, oldIndex, newIndex);
+
+    // Map to assign new sort_order (0, 1, 2, ...)
+    const updates = reorderedCategorySkills.map((skill, index) => ({
+      id: skill.id,
+      sort_order: index,
+    }));
+
+    // Optimistically update the UI
+    setSkills((prev) => {
+      const newSkills = [...prev];
+      updates.forEach((update) => {
+        const item = newSkills.find(s => s.id === update.id);
+        if (item) item.sort_order = update.sort_order;
+      });
+      // Sort immediately so the UI snaps perfectly
+      return newSkills.sort((a, b) => a.sort_order - b.sort_order);
+    });
+
+    // Save to database
+    try {
+      // Supabase doesn't have bulk update easily with different values, so we loop
+      // (For 10-20 skills, this is very fast)
+      await Promise.all(
+        updates.map((update) =>
+          supabase.from("skills").update({ sort_order: update.sort_order }).eq("id", update.id)
+        )
+      );
+      toast.success("Order saved", { id: "reorder" });
+    } catch {
+      toast.error("Failed to save new order");
+      fetchSkills(); // rollback
+    }
   }
 
   if (loading) {
@@ -166,7 +262,7 @@ export default function AdminSkills() {
       {/* Skills Grouped by Category */}
       <div className="grid lg:grid-cols-3 gap-6">
         {CATEGORIES.map((category) => {
-          const catSkills = skills.filter((s) => s.category === category);
+          const catSkills = skills.filter((s) => s.category === category).sort((a,b) => a.sort_order - b.sort_order);
           
           return (
             <div key={category} className="glass-card p-5 border border-white/5 flex flex-col">
@@ -182,23 +278,19 @@ export default function AdminSkills() {
                   No skills added yet
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {catSkills.map((skill) => (
-                    <div
-                      key={skill.id}
-                      className="group relative bg-black/40 border border-white/10 hover:border-violet-500/40 text-sm text-zinc-300 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors cursor-default"
-                    >
-                      <span>{skill.name}</span>
-                      <button
-                        onClick={() => handleDeleteSkill(skill.id)}
-                        className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all"
-                        title="Delete skill"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(e) => handleDragEnd(e, category)}
+                >
+                  <SortableContext items={catSkills} strategy={rectSortingStrategy}>
+                    <div className="flex flex-wrap gap-2">
+                      {catSkills.map((skill) => (
+                        <SortableSkillItem key={skill.id} skill={skill} onDelete={handleDeleteSkill} />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           );

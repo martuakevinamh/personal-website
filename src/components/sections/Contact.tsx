@@ -37,26 +37,27 @@ export default function Contact({ personalInfo }: { personalInfo?: PersonalInfo 
     ? `https://formspree.io/f/${process.env.NEXT_PUBLIC_FORMSPREE_ID}`
     : "https://formspree.io/f/mlgggvap";
 
-  // Basic regex — catches obvious invalid formats before hitting any API
+  // Basic regex — catches obvious format errors instantly (no network request)
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const validateEmail = async (email: string): Promise<string | null> => {
     if (!EMAIL_REGEX.test(email)) return "Please enter a valid email address.";
 
-    // Check that the domain has real MX records (no fake domains like test@abc.xyz)
+    // Server-side DNS MX lookup — checks if the domain has a real mail server
     try {
-      const res = await fetch(
-        `https://emailvalidation.abstractapi.com/v1/?api_key=${process.env.NEXT_PUBLIC_ABSTRACT_EMAIL_KEY}&email=${encodeURIComponent(email)}`
-      );
+      const res = await fetch("/api/validate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
       if (res.ok) {
         const data = await res.json();
-        // deliverability: "DELIVERABLE" | "UNDELIVERABLE" | "RISKY" | "UNKNOWN"
-        if (data.deliverability === "UNDELIVERABLE") {
-          return "This email address doesn't appear to exist. Please use a real email.";
+        if (!data.data?.valid) {
+          return data.data?.reason ?? "Please use a valid email address.";
         }
       }
     } catch {
-      // If API is unavailable, let it through — don't block legitimate users
+      // If our own API is down, let it through rather than blocking real users
     }
     return null;
   };

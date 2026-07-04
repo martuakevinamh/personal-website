@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ToasterProvider from "@/providers/ToasterProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -13,11 +14,11 @@ const BASE_URL = "https://martuakevin.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "Martua Kevin | Informatics Engineering Graduate & Web Developer",
+    default: "Martua Kevin — Web Developer & Engineer",
     template: "%s | Martua Kevin",
   },
   description:
-    "Portfolio of Martua Kevin, a passionate Informatics Engineering Graduate and Web Developer from Indonesia building innovative digital solutions with Next.js, Python, and Deep Learning.",
+    "Portfolio of Martua Kevin, an Informatics Engineering Graduate from ITERA, Indonesia. Specializing in web development with Next.js, Python & Deep Learning.",
   keywords: [
     "Martua Kevin",
     "portfolio",
@@ -44,9 +45,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: BASE_URL,
     siteName: "Martua Kevin Portfolio",
-    title: "Martua Kevin | Informatics Engineering Graduate & Web Developer",
+    title: "Martua Kevin — Web Developer & Engineer",
     description:
-      "Portfolio of Martua Kevin — Informatics Engineering Graduate and Web Developer building innovative digital solutions.",
+      "Informatics Engineering Graduate from ITERA, Indonesia. Building web apps with Next.js, Python & Deep Learning.",
     images: [
       {
         url: "/opengraph-image",
@@ -58,9 +59,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Martua Kevin | Portfolio",
+    title: "Martua Kevin — Web Developer & Engineer",
     description:
-      "Informatics Engineering Graduate & Web Developer from Indonesia.",
+      "Informatics Engineering Graduate from ITERA. Building with Next.js, Python & Deep Learning.",
     images: ["/opengraph-image"],
   },
   alternates: {
@@ -108,6 +109,7 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         {children}
         <ToasterProvider />
+        <Analytics />
       </body>
     </html>
   );
