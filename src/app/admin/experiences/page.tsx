@@ -241,22 +241,31 @@ export default function AdminExperiences() {
     setUploadingImage(true);
     toast.loading("Uploading image...", { id: "upload" });
     
-    const url = await uploadImage(file, `experiences/${expId}`);
-    if (url) {
-      await addExperienceImage({
+    try {
+      const url = await uploadImage(file, `experiences/${expId}`);
+      if (!url) throw new Error("Failed to upload image to storage");
+
+      const result = await addExperienceImage({
         experience_id: expId,
         src: url,
-        position: "center center",
+        position: "50% 50%",
         zoom: 1,
         sort_order: 0
       });
-      toast.success("Image uploaded!", { id: "upload" });
-      loadData();
-    } else {
-      toast.error("Failed to upload image", { id: "upload" });
+
+      if (result) {
+        toast.success("Image uploaded successfully!", { id: "upload" });
+        loadData();
+      } else {
+        throw new Error("Failed to save image record in database. Check if 'position' and 'zoom' columns exist in experience_images table.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload image", { id: "upload" });
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
     }
-    setUploadingImage(false);
-    e.target.value = "";
   }
 
   function handleImageDelete(imgId: number, url: string) {

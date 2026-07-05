@@ -13,6 +13,7 @@ const WARN_BEFORE_MS  =  1 * 60 * 1000; //  1 minute warning before logout
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -119,16 +120,45 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
   // Render with sidebar for protected pages
   return (
-    <div className="flex h-screen bg-[#0a0a0f] overflow-hidden text-zinc-200">
+    <div className="flex flex-col md:flex-row h-screen bg-[#0a0a0f] overflow-hidden text-zinc-200">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#12121a] z-50">
+        <h2 className="text-xl font-bold bg-linear-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+          Admin Panel
+        </h2>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-zinc-400 hover:text-white transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isMobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-[#12121a] flex flex-col">
-        <div className="p-6 border-b border-white/5">
+      <aside className={`
+        ${isMobileMenuOpen ? "flex" : "hidden"} 
+        md:flex flex-col 
+        w-full md:w-64 
+        border-b md:border-b-0 md:border-r border-white/5 
+        bg-[#12121a] 
+        absolute md:relative 
+        z-40 
+        h-[calc(100vh-72px)] md:h-screen 
+        top-18 md:top-0
+      `}>
+        <div className="hidden md:block p-6 border-b border-white/5">
           <h2 className="text-xl font-bold bg-linear-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
             Admin Panel
           </h2>
           <p className="text-xs text-zinc-500 mt-1 truncate">{session?.user?.email}</p>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {[
             { name: "Dashboard", path: "/admin", icon: <LayoutDashboard size={20} /> },
             { name: "Personal Data", path: "/admin/personal", icon: <User size={20} /> },
@@ -139,7 +169,10 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
           ].map((item) => (
             <button
               key={item.name}
-              onClick={() => router.push(item.path)}
+              onClick={() => {
+                router.push(item.path);
+                setIsMobileMenuOpen(false); // Close menu on navigation
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
                 pathname === item.path
                   ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
@@ -170,7 +203,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto relative bg-[#0a0a0f]">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_0%,rgba(139,92,246,0.03),transparent)] pointer-events-none" />
-        <div className="p-8 relative z-10">{children}</div>
+        <div className="p-4 md:p-8 relative z-10">{children}</div>
       </main>
     </div>
   );
