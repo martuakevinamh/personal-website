@@ -5,7 +5,7 @@ import Image from "next/image";
 import ProjectDetailModal from "./ProjectDetailModal";
 import { Star, Inbox } from "lucide-react";
 
-type ProjectImage = { src: string; position: string };
+type ProjectImage = { src: string; position: string; zoom?: number };
 
 type Project = {
   id: number;
@@ -38,19 +38,25 @@ function ProjectCard({ project, index, onSelect }: { project: Project; index: nu
       {/* ── Image ── */}
       <div className="relative h-52 overflow-hidden bg-zinc-900">
         {images.length > 0 ? (
-          images.map((img, i) => (
-            <Image
-              key={img.src}
-              src={img.src}
-              alt={`${project.title} - ${i + 1}`}
-              fill
-              className={`object-cover transition-all duration-700 group-hover:scale-105 ${
-                i === imgIdx ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ objectPosition: img.position }}
-              sizes="(max-width: 768px) 100vw, 400px"
-            />
-          ))
+          <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
+            {images.map((img, i) => (
+              <Image
+                key={img.src}
+                src={img.src}
+                alt={`${project.title} - ${i + 1}`}
+                fill
+                className={`object-cover transition-opacity duration-600 ${
+                  i === imgIdx ? "opacity-100" : "opacity-0"
+                }`}
+                style={{ 
+                  objectPosition: img.position || "center",
+                  transformOrigin: img.position || "center",
+                  transform: `scale(${img.zoom || 1})`
+                }}
+                sizes="(max-width: 768px) 100vw, 400px"
+              />
+            ))}
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-700 text-4xl">
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">

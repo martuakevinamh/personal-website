@@ -36,6 +36,7 @@ function DraggableProfileImage({
   onRemove: (src: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Parse position "50% 50%" or default
   const posStr = img.position || "50% 50%";
@@ -48,6 +49,8 @@ function DraggableProfileImage({
     
     const initialPosX = posX;
     const initialPosY = posY;
+    
+    setIsDragging(true);
     
     // Using window events so it doesn't stop if mouse leaves the container
     const handlePointerMove = (ev: PointerEvent) => {
@@ -70,18 +73,26 @@ function DraggableProfileImage({
     const handlePointerUp = () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      setIsDragging(false);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
   };
 
+  const handleDoubleClick = () => {
+    onUpdate(index, "position", "50% 50%");
+    onUpdate(index, "zoom", 1);
+  };
+
   return (
     <div className="flex flex-col gap-2 shrink-0 border border-white/10 rounded-xl p-3 bg-black/20 w-48">
       <div 
         ref={containerRef}
-        className="relative w-full aspect-square rounded-lg overflow-hidden group cursor-move touch-none"
+        className={`relative w-full aspect-square rounded-lg overflow-hidden group touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
         onPointerDown={handlePointerDown}
+        onDoubleClick={handleDoubleClick}
+        title="Drag to position, Double-click to reset"
       >
         <Image 
           src={img.src} 
@@ -90,12 +101,21 @@ function DraggableProfileImage({
           className="object-cover pointer-events-none" 
           style={{
             objectPosition: img.position || "50% 50%",
+            transformOrigin: img.position || "50% 50%",
             transform: `scale(${img.zoom || 1})`
           }}
         />
         
+        {/* Rule of Thirds Grid */}
+        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-300 flex ${isDragging ? "opacity-100" : "opacity-0"}`}>
+          <div className="absolute top-1/3 left-0 w-full h-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute top-2/3 left-0 w-full h-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute left-1/3 top-0 h-full w-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute left-2/3 top-0 h-full w-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+        </div>
+
         {/* Overlay instructions & remove button */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+        <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
           <div className="flex items-center gap-1 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
             <Move size={12} /> Drag to position
           </div>

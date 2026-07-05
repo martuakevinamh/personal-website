@@ -38,18 +38,25 @@ function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: strin
 
   return (
     <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4">
-      {images.map((img, i) => (
-        <Image
-          key={img.src}
-          src={img.src}
-          alt={`${alt} ${i + 1}`}
-          fill
-          className={`object-cover transition-opacity duration-600 ${i === idx ? "opacity-100" : "opacity-0"}`}
-          style={{ objectPosition: img.position || "center", transform: `scale(${img.zoom || 1})` }}
-          sizes="400px"
-        />
-      ))}
-      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+      <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
+        {images.map((img, i) => (
+          <Image
+            key={img.src}
+            src={img.src}
+            alt={`${alt} ${i + 1}`}
+            fill
+            className={`object-cover transition-opacity duration-600 ${i === idx ? "opacity-100" : "opacity-0"}`}
+            style={{ 
+              objectPosition: img.position || "center", 
+              transformOrigin: img.position || "center",
+              transform: `scale(${img.zoom || 1})` 
+            }}
+            sizes="400px"
+          />
+        ))}
+      </div>
+      {/* Vignette overlay for text readability (even if no text is directly on it, it looks premium) */}
+      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
       {images.length > 1 && (
         <>
           <div className="absolute bottom-2 right-2 text-[10px] bg-black/50 text-white/70 px-2 py-0.5 rounded-full">

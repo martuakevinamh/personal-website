@@ -22,6 +22,7 @@ function DraggableProjectImage({
   const containerRef = useRef<HTMLDivElement>(null);
   const [localPos, setLocalPos] = useState(img.position || "50% 50%");
   const [localZoom, setLocalZoom] = useState(img.zoom || 1);
+  const [isDragging, setIsDragging] = useState(false);
   
   const [posX, posY] = localPos.split(" ").map(p => parseFloat(p) || 50);
 
@@ -32,6 +33,7 @@ function DraggableProjectImage({
     const initialPosX = posX;
     const initialPosY = posY;
     
+    setIsDragging(true);
     let currentNewPos = localPos;
 
     const handlePointerMove = (ev: PointerEvent) => {
@@ -52,6 +54,7 @@ function DraggableProjectImage({
     const handlePointerUp = () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      setIsDragging(false);
       onSave(img.id, "position", currentNewPos);
     };
 
@@ -59,12 +62,21 @@ function DraggableProjectImage({
     window.addEventListener("pointerup", handlePointerUp);
   };
 
+  const handleDoubleClick = () => {
+    setLocalPos("50% 50%");
+    setLocalZoom(1);
+    onSave(img.id, "position", "50% 50%");
+    onSave(img.id, "zoom", 1);
+  };
+
   return (
     <div className="flex flex-col gap-2 shrink-0 border border-white/10 rounded-xl p-2 bg-black/20 w-48">
       <div 
         ref={containerRef}
-        className="relative w-full aspect-video rounded-lg overflow-hidden group cursor-move touch-none"
+        className={`relative w-full aspect-video rounded-lg overflow-hidden group touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
         onPointerDown={handlePointerDown}
+        onDoubleClick={handleDoubleClick}
+        title="Drag to position, Double-click to reset"
       >
         <Image 
           src={img.src} 
@@ -73,11 +85,20 @@ function DraggableProjectImage({
           className="object-cover pointer-events-none" 
           style={{
             objectPosition: localPos,
+            transformOrigin: localPos,
             transform: `scale(${localZoom})`
           }}
         />
         
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+        {/* Rule of Thirds Grid */}
+        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-300 flex ${isDragging ? "opacity-100" : "opacity-0"}`}>
+          <div className="absolute top-1/3 left-0 w-full h-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute top-2/3 left-0 w-full h-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute left-1/3 top-0 h-full w-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          <div className="absolute left-2/3 top-0 h-full w-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+        </div>
+
+        <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
           <div className="flex items-center gap-1 text-white text-[10px] font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
             <Move size={10} /> Drag
           </div>
