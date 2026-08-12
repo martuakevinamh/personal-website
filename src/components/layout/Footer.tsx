@@ -29,20 +29,16 @@ export default function Footer({ personalInfo }: { personalInfo?: PersonalInfo |
   ].filter((s) => s.url);
 
   return (
-    <footer className="relative border-t border-white/5 overflow-hidden">
-      {/* top gradient line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-violet-500/40 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_100%,rgba(99,102,241,0.04),transparent)]" />
-
-      <div className="max-w-6xl mx-auto px-6 py-12 relative z-10">
+    <footer className="relative border-t border-white/8">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
 
           {/* Brand */}
           <div className="text-center md:text-left">
-            <Link href="#home" className="text-xl font-bold gradient-text">
-              &lt;Martua /&gt;
+            <Link href="#home" className="text-xl font-bold">
+              &lt;Martua <span className="text-violet-400">/&gt;</span>
             </Link>
-            <p className="text-zinc-600 text-xs mt-2">
+            <p className="text-stone-500 text-xs mt-2">
               © {year} {personalInfo?.name ?? "Personal Website"}. All rights reserved.
             </p>
           </div>
@@ -53,7 +49,8 @@ export default function Footer({ personalInfo }: { personalInfo?: PersonalInfo |
               <Link
                 key={n}
                 href={`#${n.toLowerCase()}`}
-                className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
+                className="text-stone-500 hover:text-stone-300 text-xs transition-colors"
+                aria-label={`Go to ${n} section`}
               >
                 {n}
               </Link>
@@ -69,14 +66,14 @@ export default function Footer({ personalInfo }: { personalInfo?: PersonalInfo |
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={s.label}
-                className="w-9 h-9 rounded-xl glass flex items-center justify-center text-zinc-500 hover:text-white hover:border-violet-500/30 transition-all duration-300"
+                className="w-9 h-9 rounded-xl glass flex items-center justify-center text-stone-500 hover:text-white hover:border-violet-500/30 transition-[color,border-color] duration-300"
               >
                 {s.icon}
               </a>
             ))}
             <Link
               href="#home"
-              className="w-9 h-9 rounded-xl glass flex items-center justify-center text-zinc-500 hover:text-white hover:border-violet-500/30 transition-all duration-300"
+              className="w-9 h-9 rounded-xl glass flex items-center justify-center text-stone-500 hover:text-white hover:border-violet-500/30 transition-[color,border-color] duration-300"
               aria-label="Back to top"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

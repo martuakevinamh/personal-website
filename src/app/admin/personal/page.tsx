@@ -115,14 +115,15 @@ function DraggableProfileImage({
         </div>
 
         {/* Overlay instructions & remove button */}
-        <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
+        <div className={`absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
           <div className="flex items-center gap-1 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
             <Move size={12} /> Drag to position
           </div>
           <button
             type="button"
+            onPointerDown={(e) => { e.stopPropagation(); }}
             onClick={(e) => { e.stopPropagation(); onRemove(img.src); }}
-            className="bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors pointer-events-auto"
+            className="bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors pointer-events-auto shadow-lg"
           >
             Remove
           </button>
@@ -251,7 +252,7 @@ export default function AdminPersonal() {
                 ...prev,
                 profile_images: (prev.profile_images || []).filter(img => img.src !== urlToRemove),
               }));
-              toast.success("Image removed");
+              toast.success("Image removed (Remember to save!)");
             }} 
             className="px-4 py-1.5 text-xs bg-red-500 rounded-lg hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
           >

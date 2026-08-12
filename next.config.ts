@@ -5,7 +5,7 @@ const cspHeader = `
   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: https://via.placeholder.com https://placehold.co https://ixdaxtzxavxhesqhkuyi.supabase.co;
-  connect-src 'self' https://ixdaxtzxavxhesqhkuyi.supabase.co https://vitals.vercel-insights.com;
+  connect-src 'self' https://ixdaxtzxavxhesqhkuyi.supabase.co https://formspree.io https://vitals.vercel-insights.com;
   font-src 'self' data:;
   object-src 'none';
   base-uri 'self';

@@ -8,9 +8,9 @@ export default function ToasterProvider() {
       position="bottom-right" 
       toastOptions={{
         style: {
-          background: '#18181b', // zinc-900
-          color: '#fff',
-          border: '1px solid #27272a', // zinc-800
+          background: '#161310', // warm surface
+          color: '#f7f3ec',
+          border: '1px solid rgba(247,243,236,0.12)',
         },
       }} 
     />

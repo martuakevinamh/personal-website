@@ -21,7 +21,7 @@ export default function OGImage() {
           alignItems: "flex-start",
           justifyContent: "center",
           padding: "80px",
-          background: "linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)",
+          background: "linear-gradient(135deg, #0E0C0A 0%, #161310 50%, #0E0C0A 100%)",
           position: "relative",
           fontFamily: "sans-serif",
         }}
@@ -35,7 +35,7 @@ export default function OGImage() {
             width: "500px",
             height: "500px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(201,162,39,0.25) 0%, transparent 70%)",
           }}
         />
         <div
@@ -46,7 +46,7 @@ export default function OGImage() {
             width: "400px",
             height: "400px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(217,70,239,0.15) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(217,180,92,0.12) 0%, transparent 70%)",
           }}
         />
 
@@ -56,7 +56,7 @@ export default function OGImage() {
             display: "flex",
             fontSize: 28,
             fontWeight: 700,
-            color: "#a78bfa",
+            color: "#d4a93a",
             marginBottom: 32,
             letterSpacing: "-0.5px",
           }}
@@ -83,7 +83,7 @@ export default function OGImage() {
           style={{
             display: "flex",
             fontSize: 32,
-            color: "#a1a1aa",
+            color: "#a59c8c",
             marginBottom: 48,
             fontWeight: 400,
           }}
@@ -96,7 +96,7 @@ export default function OGImage() {
           style={{
             width: 80,
             height: 4,
-            background: "linear-gradient(90deg, #8b5cf6, #d946ef)",
+            background: "linear-gradient(90deg, #b08a1e, #d9b45c)",
             borderRadius: 2,
             marginBottom: 48,
           }}
@@ -109,10 +109,10 @@ export default function OGImage() {
               key={tag}
               style={{
                 padding: "10px 20px",
-                background: "rgba(139,92,246,0.15)",
-                border: "1px solid rgba(139,92,246,0.3)",
+                background: "rgba(201,162,39,0.15)",
+                border: "1px solid rgba(201,162,39,0.3)",
                 borderRadius: 8,
-                color: "#c4b5fd",
+                color: "#d9b45c",
                 fontSize: 22,
                 fontWeight: 500,
               }}
@@ -129,7 +129,7 @@ export default function OGImage() {
             bottom: 48,
             right: 80,
             fontSize: 22,
-            color: "#52525b",
+            color: "#5c5547",
           }}
         >
           martuakevin.vercel.app

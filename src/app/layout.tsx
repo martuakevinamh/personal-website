@@ -101,12 +101,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
+        <meta name="theme-color" content="#0E0C0A" />
+        {/* Warm up the Supabase connection (API + image storage) */}
+        <link rel="preconnect" href="https://ixdaxtzxavxhesqhkuyi.supabase.co" />
+        <link rel="preconnect" href="https://ixdaxtzxavxhesqhkuyi.supabase.co" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className={`${inter.variable} antialiased`}>
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         {children}
         <ToasterProvider />
         <Analytics />

@@ -13,7 +13,14 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export async function POST(request: NextRequest) {
   try {
     // Basic IP-based rate limiting (5 requests per minute per IP)
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    // x-forwarded-for bisa berisi daftar: "<ip-klien-diklaim>, <ip-asli-dari-proxy>".
+    // Proxy tepercaya (Vercel) menambahkan IP asli klien sebagai entri PALING AKHIR,
+    // jadi ambil entri terakhir agar attacker tidak bisa mereset rate-limit dengan
+    // memalsukan nilai header x-forwarded-for pada tiap request.
+    const xff = request.headers.get("x-forwarded-for");
+    const ip = xff
+      ? xff.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "unknown"
+      : "unknown";
     const { allowed, resetIn } = rateLimit(ip, 5, 60 * 1000);
 
     if (!allowed) {

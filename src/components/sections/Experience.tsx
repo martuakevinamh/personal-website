@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Briefcase, ClipboardList, Inbox, ExternalLink } from "lucide-react";
-import ExperienceDetailModal from "./ExperienceDetailModal";
+
+// Loaded on demand — keeps the modal (and its image handling) out of the initial bundle
+const ExperienceDetailModal = dynamic(() => import("./ExperienceDetailModal"), {
+  ssr: false,
+});
 
 type ExperienceImage = { src: string; position?: string; zoom?: number };
 type Experience = {
@@ -17,96 +22,77 @@ type Experience = {
   images: ExperienceImage[];
 };
 
-function ImageSlideshow({ images, alt }: { images: ExperienceImage[]; alt: string }) {
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    if (images.length <= 1) return;
-    const t = setInterval(() => setIdx((p) => (p + 1) % images.length), 3000);
-    return () => clearInterval(t);
-  }, [images.length]);
-
-  if (images.length === 0) {
-    return (
-      <div className="w-full h-44 bg-zinc-900 rounded-xl flex items-center justify-center text-zinc-700">
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      </div>
-    );
-  }
+function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: string; index: number; onClick: () => void }) {
+  const isPresent = !exp.endDate || exp.endDate === "Sekarang" || exp.endDate.toLowerCase() === "present";
+  const image = exp.images[0];
 
   return (
-    <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4">
-      <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
-        {images.map((img, i) => (
+    <article
+      className="glass-card p-5 fade-in group flex flex-col"
+      style={{ animationDelay: `${index * 0.1}s` }}
+    >
+      {/* Image — a real button that opens the modal */}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`View details: ${exp.title} at ${exp.organization}`}
+        className="relative w-full h-44 rounded-xl overflow-hidden mb-4 block bg-stone-900 text-left"
+      >
+        {image ? (
           <Image
-            key={img.src}
-            src={img.src}
-            alt={`${alt} ${i + 1}`}
+            src={image.src}
+            alt={`${exp.organization} photo`}
             fill
-            className={`object-cover transition-opacity duration-600 ${i === idx ? "opacity-100" : "opacity-0"}`}
-            style={{ 
-              objectPosition: img.position || "center", 
-              transformOrigin: img.position || "center",
-              transform: `scale(${img.zoom || 1})` 
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            style={{
+              objectPosition: image.position || "center",
+              transformOrigin: image.position || "center",
+              transform: `scale(${image.zoom || 1})`
             }}
             sizes="400px"
           />
-        ))}
-      </div>
-      {/* Vignette overlay for text readability (even if no text is directly on it, it looks premium) */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
-      {images.length > 1 && (
-        <>
-          <div className="absolute bottom-2 right-2 text-[10px] bg-black/50 text-white/70 px-2 py-0.5 rounded-full">
-            {idx + 1}/{images.length}
-          </div>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIdx(i)}
-                aria-label={`Go to image ${i + 1}`}
-                className={`rounded-full transition-all ${i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center text-stone-700">
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </span>
+        )}
+        {/* Vignette overlay */}
+        <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+        {exp.images.length > 1 && (
+          <span className="absolute bottom-2 right-2 text-[10px] bg-black/60 text-white/80 px-2 py-0.5 rounded-full tabular-nums">
+            {exp.images.length} photos
+          </span>
+        )}
+      </button>
 
-function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: string; index: number; onClick: () => void }) {
-  const isPresent = !exp.endDate || exp.endDate === "Sekarang" || exp.endDate.toLowerCase() === "present";
-  return (
-    <div 
-      className="glass-card p-5 fade-in group cursor-pointer hover:border-violet-500/30 transition-all hover:-translate-y-1" 
-      style={{ animationDelay: `${index * 0.1}s` }}
-      onClick={onClick}
-    >
-      <ImageSlideshow images={exp.images} alt={exp.organization} />
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className={`font-bold text-sm leading-tight ${color} group-hover:text-white transition-colors`}>{exp.title}</h3>
+        <button
+          type="button"
+          onClick={onClick}
+          className={`text-left font-bold text-sm leading-tight ${color} group-hover:text-white transition-colors`}
+        >
+          {exp.title}
+        </button>
         <span
-          className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+          className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border tabular-nums ${
             isPresent
               ? "bg-green-500/10 border-green-500/20 text-green-400"
-              : "bg-zinc-800 border-zinc-700 text-zinc-300"
+              : "bg-stone-800 border-stone-700 text-stone-300"
           }`}
         >
           {exp.startDate} – {isPresent ? "Now" : exp.endDate}
         </span>
       </div>
-      <p className="text-sm text-zinc-300 mb-2 font-medium">{exp.organization}</p>
+      <p className="text-sm text-stone-300 mb-2 font-medium">{exp.organization}</p>
       {exp.description && (
-        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3 mb-3">{exp.description}</p>
+        <p className="text-xs text-stone-500 leading-relaxed line-clamp-3 mb-3">{exp.description}</p>
       )}
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        View Details <ExternalLink size={12} />
+      <div className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-violet-400">
+        View Details <ExternalLink size={12} aria-hidden="true" />
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -122,30 +108,34 @@ export default function Experience({ experiences }: { experiences: Experience[] 
 
   return (
     <section id="experience" className="py-28 relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(217,70,239,0.04),transparent)]" />
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <h2 className="section-title">
-          <span className="gradient-text">Experience</span>
-        </h2>
-        <p className="section-subtitle">My organizational and committee experience</p>
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="section-head">
+          <p className="section-eyebrow">Career</p>
+          <h2 className="section-title">Experience</h2>
+          <p className="section-subtitle">My organizational and committee experience</p>
+          <p className="section-meta">
+            {list.length} {tab} role{list.length === 1 ? "" : "s"}
+          </p>
+        </div>
 
         {/* Tabs */}
-        <div className="flex justify-center mb-10">
-          <div className="glass rounded-full p-1 flex gap-1">
+        <div className="flex mb-10">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 gap-1" role="group" aria-label="Filter experience by type">
             {([
-              { key: "organization", label: <span className="flex items-center gap-1.5"><Briefcase size={14} /> Organization</span>, count: orgs.length },
-              { key: "committee",    label: <span className="flex items-center gap-1.5"><ClipboardList size={14} /> Committee</span>, count: coms.length },
+              { key: "organization", label: <span className="flex items-center gap-1.5"><Briefcase size={14} aria-hidden="true" /> Organization</span>, count: orgs.length },
+              { key: "committee",    label: <span className="flex items-center gap-1.5"><ClipboardList size={14} aria-hidden="true" /> Committee</span>, count: coms.length },
             ] as const).map(({ key, label, count }) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                aria-pressed={tab === key}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
                   tab === key
-                    ? "bg-linear-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_0_16px_rgba(139,92,246,0.4)]"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-white text-stone-900"
+                    : "text-stone-400 hover:text-white"
                 }`}
               >
-                {label} <span className="opacity-60 text-xs">({count})</span>
+                {label} <span className="opacity-60 text-xs tabular-nums">({count})</span>
               </button>
             ))}
           </div>
@@ -165,8 +155,8 @@ export default function Experience({ experiences }: { experiences: Experience[] 
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 text-zinc-600 flex flex-col items-center">
-            <Inbox size={48} className="mb-4 opacity-50" />
+          <div className="text-center py-16 text-stone-600 flex flex-col items-center">
+            <Inbox size={48} className="mb-4 opacity-50" aria-hidden="true" />
             <p>No {tab} experience listed yet.</p>
           </div>
         )}

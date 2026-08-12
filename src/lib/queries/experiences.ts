@@ -34,34 +34,6 @@ export async function getExperiences(): Promise<ExperienceWithImages[]> {
 }
 
 /**
- * Mengambil satu experience berdasarkan id (termasuk gambar).
- */
-export async function getExperienceById(
-  id: number
-): Promise<ExperienceWithImages | null> {
-  const { data, error } = await supabase
-    .from('experiences')
-    .select(`
-      *,
-      experience_images (*)
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error('[getExperienceById] Error:', error.message);
-    return null;
-  }
-
-  return {
-    ...data,
-    experience_images: (data.experience_images ?? []).sort(
-      (a: ExperienceImage, b: ExperienceImage) => a.sort_order - b.sort_order
-    ),
-  };
-}
-
-/**
  * Menambah experience baru. Digunakan oleh admin panel.
  */
 export async function createExperience(

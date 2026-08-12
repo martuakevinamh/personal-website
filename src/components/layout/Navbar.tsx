@@ -45,17 +45,26 @@ export default function Navbar() {
     return () => observerRef.current?.disconnect();
   }, []);
 
-  // Close mobile menu on resize
+  // Close mobile menu on resize or Escape
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setIsMobileOpen(false); };
+    const onResize = () => {
+      if (window.innerWidth >= 768) setIsMobileOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMobileOpen(false);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     setIsMobileOpen(false);
-    
+
     if (href === "#home") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -69,9 +78,9 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-[padding,background-color,border-color] duration-500 ${
         isScrolled
-          ? "py-3 bg-[#0a0a0f]/85 backdrop-blur-xl border-b border-white/6 shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+          ? "py-3 bg-[#0E0C0A]/90 backdrop-blur-xl border-b border-white/8"
           : "py-5 bg-transparent border-b border-transparent"
       }`}
     >
@@ -79,10 +88,10 @@ export default function Navbar() {
         {/* Logo */}
         <a
           href="#home"
-          className="text-xl font-bold gradient-text tracking-tight cursor-pointer"
+          className="text-xl font-bold tracking-tight cursor-pointer"
           onClick={(e) => handleNavClick(e, "#home")}
         >
-          &lt;Martua /&gt;
+          &lt;Martua <span className="text-violet-400">/&gt;</span>
         </a>
 
         {/* Desktop Links */}
@@ -94,15 +103,19 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => handleNavClick(e, link.href)}
-                className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
+                aria-current={isActive ? "true" : undefined}
+                className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? "text-white"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    : "text-stone-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {link.name}
                 {isActive && (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-linear-to-r from-violet-500 to-fuchsia-500 rounded-full" />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-0.5 bg-violet-500 rounded-full"
+                  />
                 )}
               </a>
             );
@@ -114,21 +127,25 @@ export default function Navbar() {
           id="mobile-menu-toggle"
           className="md:hidden relative w-9 h-9 flex flex-col items-center justify-center gap-1.5 p-1"
           onClick={() => setIsMobileOpen((p) => !p)}
-          aria-label="Toggle menu"
+          aria-label={isMobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMobileOpen}
+          aria-controls="mobile-menu"
         >
           <span
-            className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 origin-center ${
+            aria-hidden="true"
+            className={`w-5 h-0.5 bg-white rounded-full transition-[transform,opacity] duration-300 origin-center ${
               isMobileOpen ? "rotate-45 translate-y-1.75" : ""
             }`}
           />
           <span
-            className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 ${
+            aria-hidden="true"
+            className={`w-5 h-0.5 bg-white rounded-full transition-[transform,opacity] duration-300 ${
               isMobileOpen ? "opacity-0 scale-x-0" : ""
             }`}
           />
           <span
-            className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 origin-center ${
+            aria-hidden="true"
+            className={`w-5 h-0.5 bg-white rounded-full transition-[transform,opacity] duration-300 origin-center ${
               isMobileOpen ? "-rotate-45 -translate-y-1.75" : ""
             }`}
           />
@@ -137,7 +154,8 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden transition-all duration-300 overflow-hidden ${
+        id="mobile-menu"
+        className={`md:hidden transition-[max-height,opacity] duration-300 overflow-hidden ${
           isMobileOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
@@ -149,10 +167,11 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => handleNavClick(e, link.href)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
+                aria-current={isActive ? "true" : undefined}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 cursor-pointer ${
                   isActive
                     ? "text-white bg-violet-500/15 border border-violet-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    : "text-stone-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {link.name}

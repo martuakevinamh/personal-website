@@ -98,7 +98,7 @@ export default async function Home() {
   return (
     <>
       <Navbar />
-      <main>
+      <main id="main" tabIndex={-1}>
         <Hero personalInfo={personalTransformed} />
         <About personalInfo={personalTransformed} />
         <Education educationData={educationDB} />

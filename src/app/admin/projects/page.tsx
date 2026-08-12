@@ -98,16 +98,17 @@ function DraggableProjectImage({
           <div className="absolute left-2/3 top-0 h-full w-px bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
         </div>
 
-        <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
+        <div className={`absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 ${isDragging ? 'hidden' : ''}`}>
           <div className="flex items-center gap-1 text-white text-[10px] font-medium bg-black/50 px-2 py-1 rounded-full pointer-events-none">
             <Move size={10} /> Drag
           </div>
           <button
             type="button"
+            onPointerDown={(e) => { e.stopPropagation(); }}
             onClick={(e) => { e.stopPropagation(); onRemove(img.id, img.src); }}
-            className="bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-md hover:bg-red-600 transition-colors pointer-events-auto"
+            className="bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors pointer-events-auto shadow-lg"
           >
-            Del
+            Delete
           </button>
         </div>
       </div>

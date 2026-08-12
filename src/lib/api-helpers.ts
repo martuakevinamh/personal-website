@@ -1,24 +1,4 @@
-import { supabase } from '@/lib/supabase';
-import { NextRequest, NextResponse } from 'next/server';
-
-/**
- * Validasi sesi Supabase dari Authorization header (Bearer token).
- * Gunakan di API routes yang butuh autentikasi admin.
- *
- * Contoh:
- *   const user = await requireAuth(request);
- *   if (!user) return errorResponse('Unauthorized', 401);
- */
-export async function requireAuth(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data.user) return null;
-  return data.user;
-}
+import { NextResponse } from 'next/server';
 
 /**
  * Standar response sukses — { data: T, error: null }

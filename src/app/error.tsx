@@ -16,15 +16,15 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative bg-[#0a0a0f] px-6 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center relative bg-[#0E0C0A] px-6 text-center">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_50%,rgba(239,68,68,0.05),transparent)]" />
 
       <div className="relative z-10 glass-card p-8 max-w-md w-full border-red-500/20">
-        <div className="w-16 h-16 bg-red-500/10 text-red-500 flex items-center justify-center rounded-2xl mx-auto mb-6 text-3xl">
+        <div className="w-16 h-16 bg-red-500/10 text-red-500 flex items-center justify-center rounded-2xl mx-auto mb-6 text-3xl" aria-hidden="true">
           ⚠️
         </div>
         <h2 className="text-2xl font-bold mb-3">Something went wrong!</h2>
-        <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+        <p className="text-stone-400 text-sm mb-8 leading-relaxed">
           We encountered an error while loading the portfolio data. This might be a temporary network issue.
         </p>
 
