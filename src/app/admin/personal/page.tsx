@@ -98,6 +98,7 @@ function DraggableProfileImage({
           src={img.src} 
           alt={`Profile ${index}`} 
           fill 
+          sizes="192px"
           className="object-cover pointer-events-none" 
           style={{
             objectPosition: img.position || "50% 50%",

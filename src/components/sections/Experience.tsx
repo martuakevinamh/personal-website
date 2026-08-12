@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import CrossfadeImage from "@/components/CrossfadeImage";
 import { Briefcase, ClipboardList, Inbox, ExternalLink } from "lucide-react";
 
 // Loaded on demand — keeps the modal (and its image handling) out of the initial bundle
@@ -24,7 +24,23 @@ type Experience = {
 
 function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: string; index: number; onClick: () => void }) {
   const isPresent = !exp.endDate || exp.endDate === "Sekarang" || exp.endDate.toLowerCase() === "present";
-  const image = exp.images[0];
+  const [imgIdx, setImgIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  // Auto-advance through the card's photos every few seconds (pause while hovering)
+  useEffect(() => {
+    if (exp.images.length <= 1 || paused) return;
+    const id = setInterval(() => {
+      setImgIdx((p) => (p + 1) % exp.images.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [exp.images.length, paused]);
+
+  const image = exp.images[imgIdx % exp.images.length];
+  const nextSrc =
+    exp.images.length > 1
+      ? exp.images[(imgIdx + 1) % exp.images.length].src
+      : undefined;
 
   return (
     <article
@@ -37,18 +53,17 @@ function ExpCard({ exp, color, index, onClick }: { exp: Experience; color: strin
         onClick={onClick}
         aria-label={`View details: ${exp.title} at ${exp.organization}`}
         className="relative w-full h-44 rounded-xl overflow-hidden mb-4 block bg-stone-900 text-left"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
       >
         {image ? (
-          <Image
+          <CrossfadeImage
             src={image.src}
-            alt={`${exp.organization} photo`}
-            fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            style={{
-              objectPosition: image.position || "center",
-              transformOrigin: image.position || "center",
-              transform: `scale(${image.zoom || 1})`
-            }}
+            nextSrc={nextSrc}
+            alt={`${exp.organization} photo ${(imgIdx % exp.images.length) + 1}`}
+            className="group-hover:scale-105"
+            objectPosition={image.position || "center"}
+            imageTransform={`scale(${image.zoom || 1})`}
             sizes="400px"
           />
         ) : (

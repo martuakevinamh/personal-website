@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import CrossfadeImage from "@/components/CrossfadeImage";
 import { MapPin, Mail, Briefcase } from "lucide-react";
 
 type PersonalInfo = {
@@ -23,6 +23,21 @@ export default function About({ personalInfo }: { personalInfo: PersonalInfo | n
   const images = personalInfo?.profile_images?.length ? personalInfo.profile_images : [];
   const stats = personalInfo?.stats?.length ? personalInfo.stats : [];
   const [imgIdx, setImgIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  // Auto-advance through profile photos every few seconds (pause while hovering)
+  useEffect(() => {
+    if (images.length <= 1 || paused) return;
+    const id = setInterval(() => {
+      setImgIdx((p) => (p + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [images.length, paused]);
+
+  // Keep the index in range if the photo list changes
+  const safeIdx = images.length ? imgIdx % images.length : 0;
+  const nextSrc =
+    images.length > 1 ? images[(safeIdx + 1) % images.length].src : undefined;
 
   if (!personalInfo) return null;
 
@@ -48,18 +63,18 @@ export default function About({ personalInfo }: { personalInfo: PersonalInfo | n
             <div className="relative w-64 h-64 md:w-72 md:h-72">
               <div className="absolute inset-0 rounded-3xl border border-violet-500/25" aria-hidden="true" />
 
-              <div className="absolute inset-0.5 rounded-3xl overflow-hidden bg-stone-900/50 flex items-center justify-center">
+              <div
+                className="absolute inset-0.5 rounded-3xl overflow-hidden bg-stone-900/50 flex items-center justify-center"
+                onMouseEnter={() => setPaused(true)}
+                onMouseLeave={() => setPaused(false)}
+              >
                 {images.length > 0 ? (
-                  <Image
-                    key={images[imgIdx].src}
-                    src={images[imgIdx].src}
-                    alt={`${personalInfo.name} photo ${imgIdx + 1}`}
-                    fill
-                    className="object-cover"
-                    style={{
-                      objectPosition: images[imgIdx].position || "center",
-                      transform: `scale(${images[imgIdx].zoom || 1})`
-                    }}
+                  <CrossfadeImage
+                    src={images[safeIdx].src}
+                    nextSrc={nextSrc}
+                    alt={`${personalInfo.name} photo ${safeIdx + 1}`}
+                    objectPosition={images[safeIdx].position || "center"}
+                    imageTransform={`scale(${images[safeIdx].zoom || 1})`}
                     sizes="288px"
                   />
                 ) : (
@@ -74,9 +89,9 @@ export default function About({ personalInfo }: { personalInfo: PersonalInfo | n
                       key={i}
                       onClick={() => setImgIdx(i)}
                       aria-label={`Show photo ${i + 1}`}
-                      aria-pressed={i === imgIdx}
+                      aria-pressed={i === safeIdx}
                       className={`transition-[width,background-color] duration-300 rounded-full ${
-                        i === imgIdx
+                        i === safeIdx
                           ? "w-6 h-2 bg-violet-500"
                           : "w-2 h-2 bg-stone-600 hover:bg-stone-500"
                       }`}

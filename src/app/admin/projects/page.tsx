@@ -82,6 +82,7 @@ function DraggableProjectImage({
           src={img.src} 
           alt="" 
           fill 
+          sizes="192px"
           className="object-cover pointer-events-none" 
           style={{
             objectPosition: localPos,

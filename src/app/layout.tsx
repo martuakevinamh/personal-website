@@ -103,7 +103,6 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#0E0C0A" />
         {/* Warm up the Supabase connection (API + image storage) */}
-        <link rel="preconnect" href="https://ixdaxtzxavxhesqhkuyi.supabase.co" />
         <link rel="preconnect" href="https://ixdaxtzxavxhesqhkuyi.supabase.co" crossOrigin="anonymous" />
         <script
           type="application/ld+json"

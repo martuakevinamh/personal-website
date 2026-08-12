@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import { Star } from "lucide-react";
+import CrossfadeImage from "@/components/CrossfadeImage";
 
 type ProjectImage = { src: string; position: string };
 
@@ -21,6 +21,8 @@ type Project = {
 export default function ProjectDetailModal({ project, onClose }: { project: Project; onClose: () => void }) {
   const [idx, setIdx] = useState(0);
   const images = project.images || [];
+  const nextSrc =
+    images.length > 1 ? images[(idx + 1) % images.length].src : undefined;
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -88,12 +90,11 @@ export default function ProjectDetailModal({ project, onClose }: { project: Proj
         <div className="relative w-full aspect-video bg-stone-950 overflow-hidden">
           {images.length > 0 ? (
             <>
-              <Image
-                key={images[idx].src}
+              <CrossfadeImage
                 src={images[idx].src}
+                nextSrc={nextSrc}
                 alt={`${project.title} - screenshot ${idx + 1}`}
-                fill
-                className="object-cover animate-[fadeIn_0.25s_ease]"
+                duration={700}
                 style={{ objectPosition: images[idx].position }}
                 sizes="(max-width: 768px) 100vw, 768px"
                 priority

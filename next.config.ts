@@ -38,6 +38,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "ixdaxtzxavxhesqhkuyi.supabase.co" },
     ],
     formats: ["image/avif", "image/webp"],
+    // Keep optimized images in the on-disk cache (and browser/CDN caches) for a
+    // week, so repeat visits serve the carousel straight from cache without
+    // re-fetching the originals from Supabase Storage. Uploads always get fresh
+    // unique filenames, so stale-cache risk is negligible.
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days (seconds)
   },
   async headers() {
     return [

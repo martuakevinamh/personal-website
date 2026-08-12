@@ -176,9 +176,18 @@ export default function Hero({ personalInfo }: { personalInfo: PersonalInfo | nu
                 )}
               </div>
 
-              {/* Status chip */}
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap glass rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" aria-hidden="true" />
+              {/* Status chip — solid dark pill so it reads clearly over the photo/background */}
+              <div
+                className={`absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 border backdrop-blur-md ${
+                  status.toLowerCase().includes("open")
+                    ? "bg-[#0e0c0a]/85 border-green-500/40 text-green-300 shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_14px_rgba(74,222,128,0.25)]"
+                    : "bg-[#0e0c0a]/85 border-white/15 text-stone-300 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full animate-pulse ${status.toLowerCase().includes("open") ? "bg-green-400" : "bg-stone-400"}`}
+                  aria-hidden="true"
+                />
                 {status}
               </div>
             </div>

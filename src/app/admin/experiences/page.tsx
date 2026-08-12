@@ -83,6 +83,7 @@ function DraggableExperienceImage({
           src={img.src} 
           alt="" 
           fill 
+          sizes="256px"
           className="object-cover pointer-events-none" 
           style={{
             objectPosition: localPos,

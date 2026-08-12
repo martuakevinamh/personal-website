@@ -6,7 +6,7 @@
 -- dan drop policy if exists). Tidak perlu menjalankan supabase_schema.sql
 -- atau supabase_storage_setup.sql penuh di project yang sudah live.
 --
--- ⚠️ Sebelum menjalankan: pastikan 'kevinlubis2909@gmail.com' di bawah
+-- ⚠️ Sebelum menjalankan: pastikan 'YOUR_ADMIN_EMAIL@example.com' di bawah
 --    SAMA dengan email yang dipakai login di /admin/login (Supabase Auth).
 --    Jika beda, ganti semua baris email tersebut dulu.
 -- ============================================================
@@ -31,8 +31,8 @@ create policy "Public read access" on public.education for select using (true);
 drop policy if exists "Authenticated write access" on public.education;
 create policy "Admin write access" on public.education
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 create index if not exists idx_education_sort_order on public.education(sort_order);
 
@@ -43,38 +43,38 @@ create index if not exists idx_education_sort_order on public.education(sort_ord
 drop policy if exists "Authenticated write access" on public.personal;
 create policy "Admin write access" on public.personal
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 drop policy if exists "Authenticated write access" on public.skills;
 create policy "Admin write access" on public.skills
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 drop policy if exists "Authenticated write access" on public.experiences;
 create policy "Admin write access" on public.experiences
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 drop policy if exists "Authenticated write access" on public.experience_images;
 create policy "Admin write access" on public.experience_images
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 drop policy if exists "Authenticated write access" on public.projects;
 create policy "Admin write access" on public.projects
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 drop policy if exists "Authenticated write access" on public.project_images;
 create policy "Admin write access" on public.project_images
   for all
-  using (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com');
+  using (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com')
+  with check (auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com');
 
 -- ── 3) Pengaman data + index tambahan ──
 -- Cegah duplikasi baris di tabel personal (harusnya hanya 1 baris profil)
@@ -88,17 +88,17 @@ create index if not exists idx_projects_featured_created on public.projects(feat
 drop policy if exists "Authenticated Upload" on storage.objects;
 create policy "Admin Upload" on storage.objects
   for insert to authenticated
-  with check ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com' );
+  with check ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com' );
 
 drop policy if exists "Authenticated Update" on storage.objects;
 create policy "Admin Update" on storage.objects
   for update to authenticated
-  using ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com' );
+  using ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com' );
 
 drop policy if exists "Authenticated Delete" on storage.objects;
 create policy "Admin Delete" on storage.objects
   for delete to authenticated
-  using ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'kevinlubis2909@gmail.com' );
+  using ( bucket_id = 'portfolio' and auth.jwt() ->> 'email' = 'YOUR_ADMIN_EMAIL@example.com' );
 
 -- ============================================================
 -- Selesai. Verifikasi:

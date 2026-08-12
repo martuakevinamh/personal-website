@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
+import CrossfadeImage from "@/components/CrossfadeImage";
 
 type ExperienceImage = { src: string; position?: string; zoom?: number };
 
@@ -18,10 +18,22 @@ type Experience = {
 
 export default function ExperienceDetailModal({ exp, onClose }: { exp: Experience; onClose: () => void }) {
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
   const images = exp.images || [];
+  const nextSrc =
+    images.length > 1 ? images[(idx + 1) % images.length].src : undefined;
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+
+  // Auto-advance through photos every few seconds (pause while hovering the image)
+  useEffect(() => {
+    if (images.length <= 1 || paused) return;
+    const id = setInterval(() => {
+      setIdx((p) => (p + 1) % images.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [images.length, paused]);
 
   useEffect(() => {
     restoreRef.current = document.activeElement as HTMLElement | null;
@@ -85,15 +97,18 @@ export default function ExperienceDetailModal({ exp, onClose }: { exp: Experienc
         </button>
 
         {/* ── Image Header ── */}
-        <div className="relative w-full aspect-video bg-stone-950 overflow-hidden">
+        <div
+          className="relative w-full aspect-video bg-stone-950 overflow-hidden"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
           {images.length > 0 ? (
             <>
-              <Image
-                key={images[idx].src}
+              <CrossfadeImage
                 src={images[idx].src}
+                nextSrc={nextSrc}
                 alt={`${exp.organization} - photo ${idx + 1}`}
-                fill
-                className="object-cover animate-[fadeIn_0.25s_ease]"
+                duration={700}
                 style={{ objectPosition: images[idx].position || "center", transform: `scale(${images[idx].zoom || 1})` }}
                 sizes="(max-width: 768px) 100vw, 768px"
                 priority
