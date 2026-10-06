@@ -109,7 +109,8 @@ export default function ExperienceDetailModal({ exp, onClose }: { exp: Experienc
                 nextSrc={nextSrc}
                 alt={`${exp.organization} - photo ${idx + 1}`}
                 duration={700}
-                style={{ objectPosition: images[idx].position || "center", transform: `scale(${images[idx].zoom || 1})` }}
+                objectPosition={images[idx].position || "center"}
+                imageTransform={`scale(${images[idx].zoom || 1})`}
                 sizes="(max-width: 768px) 100vw, 768px"
                 priority
               />

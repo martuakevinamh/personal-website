@@ -29,16 +29,21 @@ function ProjectCard({ project, index, onSelect }: { project: Project; index: nu
 
   return (
     <article
-      className="glass-card overflow-hidden group fade-in flex flex-col"
+      className="glass-card overflow-hidden group fade-in flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/10 cursor-pointer"
       style={{ animationDelay: `${index * 0.1}s` }}
+      onClick={() => onSelect(project)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(project);
+        }
+      }}
+      aria-label={`View details: ${project.title}`}
     >
-      {/* ── Image (button opens modal) ── */}
-      <button
-        type="button"
-        onClick={() => onSelect(project)}
-        aria-label={`View details: ${project.title}`}
-        className="relative h-52 overflow-hidden bg-stone-900 block text-left"
-      >
+      {/* ── Image ── */}
+      <div className="relative h-52 overflow-hidden bg-stone-900 block text-left">
         {image ? (
           <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
             <Image
@@ -91,17 +96,13 @@ function ProjectCard({ project, index, onSelect }: { project: Project; index: nu
             {project.images.length} photos
           </span>
         )}
-      </button>
+      </div>
 
       {/* ── Content ── */}
       <div className="p-6 flex flex-col flex-1">
-        <button
-          type="button"
-          onClick={() => onSelect(project)}
-          className="text-left text-xl font-bold mb-2 group-hover:text-violet-400 transition-colors line-clamp-1"
-        >
+        <h3 className="text-left text-xl font-bold mb-2 group-hover:text-violet-400 transition-colors line-clamp-1">
           {project.title}
-        </button>
+        </h3>
         <p className="text-stone-400 text-sm mb-5 line-clamp-2 leading-relaxed flex-1">
           {project.description}
         </p>
@@ -174,8 +175,8 @@ export default function Projects({ projects }: { projects: Project[] }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex mb-10">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 gap-1" role="group" aria-label="Filter projects by status">
+        <div className="flex w-full sm:justify-center mb-10">
+          <div className="flex w-full sm:w-auto sm:inline-flex rounded-full border border-white/10 bg-white/5 p-1 gap-1" role="group" aria-label="Filter projects by status">
             {([
               { key: "ongoing", label: "In Progress", count: ongoing.length },
               { key: "completed", label: "Completed", count: completed.length },
@@ -184,13 +185,13 @@ export default function Projects({ projects }: { projects: Project[] }) {
                 key={key}
                 onClick={() => setTab(key)}
                 aria-pressed={tab === key}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
+                className={`flex-1 sm:flex-none flex items-center justify-center px-2 sm:px-5 py-2.5 sm:py-2 rounded-full text-[13px] sm:text-sm font-medium transition-colors duration-300 ${
                   tab === key
-                    ? "bg-white text-stone-900"
+                    ? "bg-white text-stone-900 shadow-sm"
                     : "text-stone-400 hover:text-white"
                 }`}
               >
-                {label} <span className="opacity-60 text-xs tabular-nums">({count})</span>
+                {label} <span className="opacity-60 text-[10px] sm:text-xs tabular-nums ml-1.5">({count})</span>
               </button>
             ))}
           </div>
